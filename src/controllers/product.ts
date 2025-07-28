@@ -1,25 +1,13 @@
 import { Request, Response } from "express";
-import { Product } from "../models/product";
+import { Package } from "../models/product";
 import { tryCatch } from "../utils/tryCatch";
-import { Category } from "../models/category";
 
 const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
   const {
-    name, price, description, stock, categoryId, xpro, discountPrice, weight, length, color
+    name, description, products
   } = req.body;
 
-
-  let categories = JSON.parse(categoryId);
-
-  const images = req.files?.image?.map((file: any) => file.path);
-
-  const category = await Category.find({ _id: { $in: categories } });
-
-  if (!category || category.length == 0) {
-    return res.status(400).json({
-      message: "category is required",
-    });
-  }
+  const images = req.files?.images
 
   if (!images || images.length == 0) {
     return res.status(400).json({
@@ -27,138 +15,154 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
     });
   }
 
-  const product = await Product.create({
-    name, price, description, stock,
-    images: images,
-    category: categories,
-    xpro: xpro === "true" ? true : false,
-    discountPrice,
-    weight,
-    length,
-    color
+  let items = JSON.parse(products)
+
+  if (!items || items.length == 0) {
+    return res.status(400).json({
+      message: "product is required",
+    });
+  }
+
+  items = items.map((item: any, index: any) => {
+    return {
+      name: item.name,
+      price: item.price,
+      description: item.description,
+      image: images[index].path
+    }
+  })
+
+  const product = await Package.create({
+    name,
+    price: 0,
+    description,
+    products: items
   });
 
   if (!product) {
     return res.status(501).json({
-      message: "something went wrong while creating user",
+      message: "something went wrong while creating Package",
     });
   }
 
   res.status(200).json({
-    message: " product created successfully!",
+    message: "Package created successfully!",
     success: true,
     product,
   });
 });
 
 const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
+  const { name, description, products } = req.body;
+  const images = req.files?.images;
 
-  const {
-    name, price, description, stock, categoryId, xpro, discountPrice, weight, length, color, removedImages
-  } = req.body;
+  const pkg: any = await Package.findById(req.params.id);
 
-  const images = req.files?.image?.map((file: any) => file.path);
+  if (!pkg) {
+    return res.status(404).json({ message: "Package not found" });
+  }
 
-  let categories = JSON.parse(categoryId);
+  if (name) pkg.name = name;
+  if (description) pkg.description = description;
 
-  const category = await Category.find({ _id: { $in: categories } });
+  if (products) {
+    let parsedProducts;
+    try {
+      parsedProducts = JSON.parse(products);
+    } catch (err) {
+      return res.status(400).json({ message: "Invalid products JSON" });
+    }
 
-  if (!category || category.length == 0) {
-    return res.status(400).json({
-      message: "category is required",
+    if (!Array.isArray(parsedProducts) || parsedProducts.length === 0) {
+      return res.status(400).json({ message: "At least one product is required" });
+    }
+
+    // Handle images (optional)
+    const uploadedImages = images || [];
+
+    // Re-map product list
+    const updatedProducts = parsedProducts.map((item: any, index: number) => {
+      return {
+        name: item.name,
+        price: item.price,
+        description: item.description,
+        image: uploadedImages[index]?.path || pkg.products[index]?.image || "", // fallback to existing image
+      };
     });
+
+    pkg.products = updatedProducts;
   }
 
-  const product = await Product.findByIdAndUpdate(
-    req.params.id,
-    {
-      $set: {
-        name, price, description, stock, category: categories, xpro, discountPrice, weight, length, color
-      },
-    },
-    {
-      new: true,
-    },
-  );
-
-  if (!product) {
-    return res.status(404).json({ message: "Product not found" });
-  }
-
-  if (removedImages && removedImages.length > 0) {
-    product.images = product.images.filter((image: any) => !removedImages.includes(image));
-  }
-
-  if (images) {
-    product.images = [...product.images, ...images]
-  }
-
-  await product.save();
-
+  await pkg.save();
 
   return res.status(200).json({
     message: "Product updated successfully!",
     success: true,
-    product,
-  })
-
+    pkg,
+  });
 });
 
 const getAllProducts = tryCatch(async (req: any, res: Response): Promise<any> => {
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
-  const rawCategories = req.query.categories?.split(",") || [];
-  const categories = rawCategories.filter((cat: string) => cat.trim() !== "");
-  const keyword = req.query.keyword?.trim() || "";
 
-  const priceRange = req.query.priceRange?.split(",") || [];
-  const minPrice = Number(priceRange[0]);
-  const maxPrice = Number(priceRange[1]);
+  // const page = Number(req.query.page) || 1;
+  // const limit = Number(req.query.limit) || 10;
+  // const rawCategories = req.query.categories?.split(",") || [];
+  // const categories = rawCategories.filter((cat: string) => cat.trim() !== "");
+  // const keyword = req.query.keyword?.trim() || "";
 
-  const skip = (page - 1) * limit;
+  // const priceRange = req.query.priceRange?.split(",") || [];
+  // const minPrice = Number(priceRange[0]);
+  // const maxPrice = Number(priceRange[1]);
 
-  const query: any = {};
-  if (categories.length > 0) {
-    query.category = { $in: categories };
-  }
+  // const skip = (page - 1) * limit;
 
-  if (keyword) {
-    query.$or = [
-      { name: { $regex: keyword, $options: "i" } },
-      { description: { $regex: keyword, $options: "i" } },
-    ];
-  }
+  // const query: any = {};
+  // if (categories.length > 0) {
+  //   query.category = { $in: categories };
+  // }
 
-  if (!isNaN(minPrice) && !isNaN(maxPrice)) {
-    query.price = { $gte: minPrice, $lte: maxPrice }
-  }
+  // if (keyword) {
+  //   query.$or = [
+  //     { name: { $regex: keyword, $options: "i" } },
+  //     { description: { $regex: keyword, $options: "i" } },
+  //   ];
+  // }
 
-  if (req.query.xpro === "false") {
-    query.xpro = false;
-  }
+  // if (!isNaN(minPrice) && !isNaN(maxPrice)) {
+  //   query.price = { $gte: minPrice, $lte: maxPrice }
+  // }
 
-  const [products, totalCount] = await Promise.all([
-    Product.find(query).skip(skip).limit(limit).populate("category"),
-    Product.countDocuments(query),
-  ]);
+  // if (req.query.xpro === "false") {
+  //   query.xpro = false;
+  // }
+
+  // const [products, totalCount] = await Promise.all([
+  //   Package.find(query).skip(skip).limit(limit),
+  //   Package.countDocuments(query),
+  // ]);
+
+
+  const packages = await Package.find({});
+
 
   return res.status(200).json({
-    message: "Products fetched successfully!",
-    products,
-    totalCount,
+    message: "packages fetched successfully!",
+    packages,
+    // totalCount,
   });
+
 });
 
 const getProductById = tryCatch(async (req: any, res: Response): Promise<any> => {
 
-  const product = await Product.findById(req.params.id);
+  const pkg = await Package.findById(req.params.id);
 
-  if (!product) {
-    return res.status(404).json({ message: "Product not found" });
+  if (!pkg) {
+    return res.status(404).json({ message: "package not found" });
   }
   return res.status(200).json({
-    message: "Product fetched successfully!",
-    product,
+    message: "package fetched successfully!",
+    pkg,
   });
 
 
@@ -167,49 +171,22 @@ const getProductById = tryCatch(async (req: any, res: Response): Promise<any> =>
 const deleteProduct = tryCatch(
   async (req: Request, res: Response): Promise<any> => {
 
-    const product = await Product.findByIdAndDelete(req.params.id);
+    const pkg = await Package.findByIdAndDelete(req.params.id);
 
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
+    if (!pkg) {
+      return res.status(404).json({ message: "Package not found" });
     }
 
     return res.status(200).json({
       message: "Product deleted successfully!",
       success: true,
-      product,
+      pkg,
     })
   });
-
-const getRandomProducts = tryCatch(async (req: any, res: Response): Promise<any> => {
-  const limit = parseInt(req.query.limit) || 5;
-
-  const totalCount = await Product.countDocuments();
-
-  if (totalCount === 0) {
-    return res.status(200).json({ message: "No products found", products: [] });
-  }
-
-  const randomIndexes = new Set<number>();
-  while (randomIndexes.size < Math.min(limit, totalCount)) {
-    const randomIndex = Math.floor(Math.random() * totalCount);
-    randomIndexes.add(randomIndex);
-  }
-
-  const randomProductsPromises = Array.from(randomIndexes).map((index) =>
-    Product.findOne().skip(index)
-  );
-
-  const products = await Promise.all(randomProductsPromises);
-
-  return res.status(200).json({
-    message: "Random products fetched successfully!",
-    products,
-  });
-});
 
 
 export {
   addProduct, deleteProduct, getAllProducts,
-  getProductById, updateProduct, getRandomProducts
+  getProductById, updateProduct
 };
 

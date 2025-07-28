@@ -1,11 +1,10 @@
 import { Router } from "express";
-import { verifyJWT } from "../middlewares/auth.middleware";
 import {
+  delateProfile,
   getMyProfile,
   updateProfile,
-  delateProfile,
 } from "../controllers/profile";
-import { isAdmin } from "../middlewares/isAdmin.middlewre";
+import { verifyJWT } from "../middlewares/auth.middleware";
 
 const profileRouter = Router();
 

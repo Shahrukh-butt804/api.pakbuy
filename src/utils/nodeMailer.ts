@@ -20,7 +20,7 @@ export default async function sendEmail(
 ): Promise<boolean> {
   try {
     const mailOptions = {
-      from: "Saloon Extension",
+      from: "choose well",
       to,
       subject,
       text,
@@ -75,14 +75,14 @@ We’re processing your order and will notify you once it’s ready.
 
 📦 Tracking Link: ${trackingLink}
 
-Thank you for choosing Saloon Extension!
+Thank you for choosing choose well!
 
 Best regards,  
-Saloon Extension Team
+choose well Team
     `;
 
     const mailOptions = {
-      from: "Saloon Extension",
+      from: "choose well",
       to,
       subject,
       text,

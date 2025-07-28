@@ -82,7 +82,7 @@ const productUpload = multer({
   fileFilter: createFileFilter(['image/']),
   limits: createLimits(10),
 }).fields([
-  { name: 'image', maxCount: 10 },
+  { name: 'images', maxCount: 10 },
 ]);
 
 

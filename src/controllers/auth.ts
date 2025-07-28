@@ -4,14 +4,9 @@ import sendEmail from "../utils/nodeMailer";
 import { tryCatch } from "../utils/tryCatch";
 
 const signup = tryCatch(async (req: any, res: Response): Promise<any> => {
-  const { fullName,
+  const {
+    fullName,
     email,
-    phone,
-    shippingAddress,
-    instagramHandle,
-    cosmetologyLicenseNumber,
-    stateOfIssuance,
-    currentAddress,
     password,
     role
   } = req.body;
@@ -19,6 +14,7 @@ const signup = tryCatch(async (req: any, res: Response): Promise<any> => {
   const image = req.files?.image?.[0]?.path || null;
 
   // check if email already exists
+
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     return res.status(400).json({ message: "Email already exists" });
@@ -27,14 +23,8 @@ const signup = tryCatch(async (req: any, res: Response): Promise<any> => {
   const user = await User.create({
     fullName,
     email,
-    phone,
-    shippingAddress,
-    instagramHandle,
-    cosmetologyLicenseNumber,
-    stateOfIssuance,
-    currentAddress,
     password,
-    licensePhoto: image,
+    image: image,
     role
   });
 

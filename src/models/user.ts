@@ -21,37 +21,7 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
-    phone: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    shippingAddress: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    instagramHandle: {
-      type: String,
-      required: true,
-      trim: true,
-      lowercase: true,
-    },
-    cosmetologyLicenseNumber: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    stateOfIssuance: {
-      type: String,
-      trim: true,
-    },
-    currentAddress: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    licensePhoto: {
+    image: {
       type: String,
       trim: true,
     },
@@ -63,11 +33,6 @@ const userSchema = new mongoose.Schema(
     refreshToken: {
       type: String,
       default: null,
-    },
-    usedCoupons: {
-      type: [mongoose.Schema.Types.ObjectId],
-      ref: "Coupon",
-      default: [],
     },
     otp: {
       type: Number,

@@ -13,40 +13,48 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  images: {
-    type: [String],
-    required: true
-  },
-  stock: {
-    type: Number,
-    required: true
-  },
-  category: {
-    type: [mongoose.Schema.Types.ObjectId],
-    ref: "Category",
-    required: true
-  },
-  xpro: {
-    type: Boolean,
-    default: false
-  },
-  discountPrice: {
-    type: Number,
-    default: 0
-  },
-  weight: {
-    type: Number,
-    default: null
-  },
-  length: {
-    type: Number,
-    default: null
-  },
-  color: {
+  image: {
     type: String,
-    default: null
-  }
+    required: true
+  },
+  // stock: {
+  //   type: Number,
+  //   required: true
+  // },
+  // category: {
+  //   type: [mongoose.Schema.Types.ObjectId],
+  //   ref: "Category",
+  //   required: true
+  // },
+  // discountPrice: {
+  //   type: Number,
+  //   default: 0
+  // },
 
-}, { timestamps: true });
+});
 
-export const Product = mongoose.model("Product", productSchema);
+const packageSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true
+  },
+  price: {
+    type: Number,
+    required: true
+  },
+  description: {
+    type: String,
+    required: true
+  },
+  products: [productSchema]
+
+})
+
+packageSchema.pre("save", function (next) {
+  const packageDoc = this;
+  const total = packageDoc.products.reduce((sum, product) => sum + product.price, 0);
+  packageDoc.price = total;
+  next();
+});
+
+export const Package = mongoose.model("Package", packageSchema);
