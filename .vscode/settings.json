@@ -1,0 +1,57 @@
+{
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[typescript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  },
+
+  "editor.fontLigatures": true,
+  "terminal.integrated.fontFamily": "",
+  "editor.fontFamily": "'Cascadia Code', 'Fira Code', 'Droid Sans Mono', 'monospace', monospace",
+  "editor.fontSize": 14,
+  "editor.tabSize": 2,
+  "editor.lineNumbers": "on",
+  "editor.stickyScroll.enabled": true,
+  "editor.inlineSuggest.enabled": true,
+  "editor.guides.bracketPairs": false,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+
+  "editor.scrollbar.horizontal": "hidden",
+  "editor.scrollbar.vertical": "hidden",
+  "editor.overviewRulerBorder": false,
+  "editor.accessibilitySupport": "off",
+  "editor.wordWrap": "on",
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.formatOnType": true,
+
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "javascript.updateImportsOnFileMove.enabled": "always",
+
+  "git.autofetch": true,
+  "git.terminalGitEditor": true,
+
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+  "explorer.compactFolders": true,
+
+  "eslint.enable": true,
+  "eslint.lintTask.enable": true,
+  "eslint.lintTask.options": "npm run lint",
+
+  "workbench.colorTheme": "Default Dark Modern",
+  "workbench.iconTheme": "material-icon-theme",
+  "workbench.startupEditor": "none",
+  "workbench.editor.enablePreviewFromQuickOpen": true,
+  "workbench.editor.limit.enabled": true,
+  "workbench.editor.limit.value": 5,
+  "workbench.editor.highlightModifiedTabs": true,
+  "workbench.editor.pinnedTabSizing": "compact",
+  "workbench.editor.tabSizing": "shrink",
+
+  "gitlens.integrations.enabled": true,
+  "gitlens.graph.layout": "editor",
+  "gitlens.statusBar.alignment": "left"
+}

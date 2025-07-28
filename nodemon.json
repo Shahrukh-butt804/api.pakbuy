@@ -1,0 +1,10 @@
+{
+  "watch": ["src"],
+  "ext": "ts",
+  "ignore": ["dist"],
+  "exec": "ts-node --transpile-only src/index.ts",
+  "$schema": "https://json.schemastore.org/nodemon",
+  "verbose": false,
+  "restartable": "r",
+  "colours": true
+}
