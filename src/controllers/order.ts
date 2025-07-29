@@ -8,6 +8,7 @@ import { Order } from "../models/order";
 import { Payment } from "../models/payment";
 import { orderConfirmation } from "../utils/nodeMailer";
 import { tryCatch } from "../utils/tryCatch";
+import { Package } from "../models/product";
 
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
@@ -18,9 +19,20 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     shippingAddress,
     token,
     orderNote,
-    totalAmount,
     products,
   } = req.body;
+
+  let totalAmount = 0;
+
+
+  for (const item of products) {
+    const pkg = await Package.findById(item.packageId);
+
+    if (!pkg) {
+      return res.status(404).json({ message: `Package not found for ID: ${item.packageId}` });
+    }
+    totalAmount += pkg.price * item.quantity;
+  }
 
 
   const order = await Order.create({
@@ -92,10 +104,6 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     {
       customerName: order?.billingAddress?.firstName + " " + order?.billingAddress?.lastName,
       orderId: order?._id.toString(),
-      // items: [
-      //   { name: "Hair Cut", quantity: 1, price: 500 },
-      //   { name: "Facial", quantity: 1, price: 1200 },
-      // ],
       totalAmount: totalAmount,
       orderDate: new Date().toLocaleDateString(),
       trackingLink: `http://localhost:5173/track-order/${order._id}`,
@@ -140,7 +148,7 @@ const getOrderById = tryCatch(async (req: any, res: Response): Promise<any> => {
 
 const getOrderByUser = tryCatch(async (req: any, res: Response): Promise<any> => {
 
-  const orders = await Order.find({ user: req.user._id }).populate("products.productId");
+  const orders = await Order.find({ user: req.user._id }).populate("products.packageId");
 
   if (!orders) {
     return res.status(404).json({ message: "orders not found" });

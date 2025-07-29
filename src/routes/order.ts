@@ -7,7 +7,7 @@ import { isLoggedIn } from "../middlewares/isLoggedIn..middleware";
 
 const orderRouter = Router();
 
-orderRouter.route("/create-order").post(validateOrder, handleValidationErrors, isLoggedIn, createOrder);
+orderRouter.route("/create-order").post(validateOrder, handleValidationErrors, verifyJWT, createOrder);
 orderRouter.route("/get-all-orders").get(getAllOrder);
 orderRouter.route("/get-order-by-id/:id").get(getOrderById);
 orderRouter.route("/get-order-by-user").get(verifyJWT, getOrderByUser);
