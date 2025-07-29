@@ -24,7 +24,7 @@ const signup = tryCatch(async (req: any, res: Response): Promise<any> => {
     fullName,
     email,
     password,
-    image: image,
+    image: image ? image : null,
     role
   });
 
