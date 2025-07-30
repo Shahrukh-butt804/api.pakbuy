@@ -22,9 +22,9 @@ echo "Create build..."
 npm run build
 
 echo "Restarting the Node.js app with PM2..."
-pm2 restart process-name
+pm2 restart choose-well
 
 echo "Logging..."
-pm2 log process-name
+pm2 log choose-well
 
 echo "Deployment complete!"
