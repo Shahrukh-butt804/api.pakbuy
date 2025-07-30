@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { Cart } from "../models/cart";
-import { Product } from "../models/product";
 import { tryCatch } from "../utils/tryCatch";
+import { Package } from "../models/product";
 
 const addToCart = tryCatch(async (req: any, res: Response): Promise<any> => {
 
@@ -13,7 +13,7 @@ const addToCart = tryCatch(async (req: any, res: Response): Promise<any> => {
     return res.status(400).json({ message: "Invalid product or quantity" });
   }
 
-  const product = await Product.findById(productId);
+  const product = await Package.findById(productId);
 
   if (!product) {
     return res.status(404).json({ message: "Product not found" });
