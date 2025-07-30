@@ -49,7 +49,7 @@ app.use("/api", limiter);
 app.use("/Uploads", express.static("./Uploads"));
 
 app.get("/", (req: Request, res: Response) => {
-  res.send("Choose Well Is Running on Port 3053");
+  res.send(`Choose Well Is Running on Port ${PORT}`);
 });
 
 // routes register
