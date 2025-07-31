@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { Package } from "../models/product";
 import { tryCatch } from "../utils/tryCatch";
 
+
+
 const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
   const {
     name, description, products

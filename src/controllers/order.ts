@@ -13,6 +13,13 @@ import { Package } from "../models/product";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
+const getStripeKeys = tryCatch(async (req: any, res: Response): Promise<any> => {
+  return res.status(200).json({
+    message: "Stripe keys fetched successfully!",
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+  });
+});
+
 const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
   const {
     billingAddress,
@@ -35,7 +42,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
   }
 
   // twenty percent tax
-  totalAmount += totalAmount * 0.2;
+  totalAmount += Math.round(totalAmount * 0.2);
 
   const order = await Order.create({
     user: req.user._id ? req.user._id : null,
@@ -179,6 +186,7 @@ const deleteOrder = tryCatch(
 
 
 export {
+  getStripeKeys,
   createOrder, deleteOrder, getAllOrder,
   getOrderById, getOrderByUser
 };
