@@ -31,6 +31,7 @@ const updateProfile = tryCatch(
 
     res.status(200).json({
       message: "Profile updated successfully!",
+      success: true,
       user,
     });
   },
