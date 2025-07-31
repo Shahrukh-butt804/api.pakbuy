@@ -40,7 +40,6 @@ export default async function sendEmail(
   }
 }
 
-
 export async function orderConfirmation(
   to: string | any,
   subject: string,
