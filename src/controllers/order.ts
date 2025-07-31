@@ -108,7 +108,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
       orderId: order?._id.toString(),
       totalAmount: totalAmount,
       orderDate: new Date().toLocaleDateString(),
-      trackingLink: `http://localhost:5173/track-order/${order._id}`,
+      trackingLink: `/track-order/${order._id}`,
     }
   );
 
