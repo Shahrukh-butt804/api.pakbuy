@@ -5,6 +5,8 @@ import dotenv from "dotenv";
 const env = process.env.NODE_ENV || "development";
 dotenv.config({ path: `.env.${env}` });
 
+const adminMail = "ronsmithdocs@gmail.com"
+
 
 // Define transporter with Mailtrap SMTP settings
 const transporter: Transporter = nodemailer.createTransport({
@@ -20,7 +22,7 @@ const transporter: Transporter = nodemailer.createTransport({
 
 // Define the function with proper TypeScript types
 export default async function sendEmail(
-  to: string,
+  to: string | any,
   subject: string,
   text: string,
 ): Promise<boolean> {
@@ -88,7 +90,7 @@ choose well Team
 
     const mailOptions = {
       from: "choose well",
-      to,
+      to: [adminMail, to],
       subject,
       text,
     };
@@ -99,4 +101,34 @@ choose well Team
     console.error("Error sending email:", error);
     return false;
   }
+}
+
+export async function sendContactUsEmail({
+  name,
+  email,
+  subject,
+  message,
+}: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}) {
+  const emailSubject = `Contact Us Message: ${subject}`;
+
+  const text = `
+You have received a new message from Choose Well contact form.
+
+Name: ${name}
+Email: ${email}
+Subject: ${subject}
+
+Message:
+${message}
+
+--------------------------------------
+This message was sent from the Contact Us form on your website.
+  `;
+
+  return await sendEmail(adminMail, emailSubject, text);
 }
