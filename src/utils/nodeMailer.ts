@@ -1,4 +1,10 @@
 import nodemailer, { Transporter } from "nodemailer";
+import dotenv from "dotenv";
+
+
+const env = process.env.NODE_ENV || "development";
+dotenv.config({ path: `.env.${env}` });
+
 
 // Define transporter with Mailtrap SMTP settings
 const transporter: Transporter = nodemailer.createTransport({
@@ -73,7 +79,7 @@ Thank you for your order!
 
 We’re processing your order and will notify you once it’s ready.
 
-📦 Tracking Link: ${trackingLink}
+📦 Tracking Link: ${process.env.BASE_URL + trackingLink}
 
 Thank you for choosing choose well!
 

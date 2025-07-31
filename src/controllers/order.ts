@@ -34,6 +34,8 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     totalAmount += pkg.price * item.quantity;
   }
 
+  // twenty percent tax
+  totalAmount += totalAmount * 0.2;
 
   const order = await Order.create({
     user: req.user._id ? req.user._id : null,
@@ -100,7 +102,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
 
   const result = await orderConfirmation(
     order?.billingAddress?.email,
-    "Order Confirmation - Saloon Extension",
+    "Order Confirmation - Choose Well",
     {
       customerName: order?.billingAddress?.firstName + " " + order?.billingAddress?.lastName,
       orderId: order?._id.toString(),
