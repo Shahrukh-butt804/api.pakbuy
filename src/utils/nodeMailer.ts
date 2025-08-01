@@ -76,7 +76,7 @@ Thank you for your order!
 
 
 
-💰 Total Amount: Rs. ${totalAmount}
+💰 Total Amount: $. ${totalAmount}
 
 We’re processing your order and will notify you once it’s ready.
 
