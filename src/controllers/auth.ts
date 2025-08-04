@@ -44,12 +44,15 @@ const signup = tryCatch(async (req: any, res: Response): Promise<any> => {
 const login = tryCatch(async (req: Request, res: Response): Promise<any> => {
   const { email, password, role } = req.body;
 
+  console.log(email, password, role)
+
   if (!email || !password) {
     return res
       .status(400)
       .json({ message: "Please provide email and password" });
   }
   const user: any = await User.findOne({ email, role });
+
   if (!user) {
     return res.status(404).json({ message: "User not found" });
   }

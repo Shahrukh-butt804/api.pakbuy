@@ -1,6 +1,69 @@
 import { Request, Response } from "express";
 import { User } from "../models/user";
 import { tryCatch } from "../utils/tryCatch";
+import dayjs from "dayjs";
+import { Payment } from "../models/payment";
+
+const getReport = tryCatch(async (req: Request, res: Response): Promise<any> => {
+  const totalUsers = await User.countDocuments();
+
+  if (!totalUsers) {
+    return res.status(404).json({ message: "No users found" });
+  }
+
+  // Prepare 6 months ago date
+  const now = dayjs();
+  const sixMonthsAgo = now.subtract(5, 'month').startOf('month').toDate();
+
+  // Fetch users created in the last 6 months
+  const lastSixMonthsData = await User.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: sixMonthsAgo }
+      }
+    },
+    {
+      $group: {
+        _id: {
+          year: { $year: "$createdAt" },
+          month: { $month: "$createdAt" }
+        },
+        count: { $sum: 1 }
+      }
+    },
+    {
+      $sort: {
+        "_id.year": 1,
+        "_id.month": 1
+      }
+    }
+  ]);
+
+  const payments = await Payment.find();
+  const totalAmount = payments.reduce((sum, payment) => sum + payment.amount, 0);
+
+
+  // Format data to show month name and count
+  const formattedData = Array.from({ length: 6 }).map((_, i) => {
+    const targetMonth = now.subtract(5 - i, 'month');
+    const match = lastSixMonthsData.find(
+      (d) => d._id.month === targetMonth.month() + 1 && d._id.year === targetMonth.year()
+    );
+
+    return {
+      month: targetMonth.format('MMMM YYYY'),
+      users: match?.count || 0
+    };
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "User report fetched successfully",
+    totalUsers,
+    funds: totalAmount.toFixed(2),
+    recentSixMonths: formattedData
+  });
+});
 
 const getAllUsers = tryCatch(async (req: any, res: Response): Promise<any> => {
 
@@ -54,4 +117,4 @@ const toggleUserStatus = tryCatch(async (req: Request, res: Response): Promise<a
 
 
 
-export { getAllUsers, getUserById, toggleUserStatus };
+export { getReport, getAllUsers, getUserById, toggleUserStatus };
