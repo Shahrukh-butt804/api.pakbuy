@@ -1,24 +1,65 @@
+import dotenv from "dotenv";
+const env = process.env.NODE_ENV || "development";
+dotenv.config({ path: `.env.${env}` });
+
 import { Request, Response } from "express";
+import Stripe from "stripe";
+import { MemberShipPayment } from "../models/memberShipPayment";
 import { User } from "../models/user";
 import sendEmail from "../utils/nodeMailer";
 import { tryCatch } from "../utils/tryCatch";
+
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+
 
 const signup = tryCatch(async (req: any, res: Response): Promise<any> => {
   const {
     fullName,
     email,
     password,
-    role
+    role,
+    token
   } = req.body;
 
   const image = req.files?.image?.[0]?.path || null;
 
   // check if email already exists
-
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     return res.status(400).json({ message: "Email already exists" });
   }
+
+
+  // make payment
+  const customer = await stripe.customers.create({
+    email: email,
+    source: token,
+  });
+
+  // Create the charge
+  const charge = await stripe.charges.create({
+    amount: Number(process.env.MEMBERSHIPCHARGES) * 100,
+    currency: 'usd',
+    description: "",
+    customer: customer.id
+  });
+
+
+  if (charge.status !== "succeeded") {
+    return res.status(400).json({ message: "payment Failed From Stripe" });
+  }
+
+  const payment = await MemberShipPayment.create({
+    amount: Number(process.env.MEMBERSHIPCHARGES) * 100,
+    paymentMethod: "Stripe",
+    metaData: charge
+  });
+
+  if (!payment) {
+    return res.status(500).json({ message: "Failed to create payment" });
+  }
+
 
   const user = await User.create({
     fullName,
@@ -32,6 +73,23 @@ const signup = tryCatch(async (req: any, res: Response): Promise<any> => {
     return res.status(501).json({
       message: "something went wrong while creating user",
     });
+  }
+
+
+  const result = await MemberShipPayment.findByIdAndUpdate(
+    payment._id,
+    {
+      $set: {
+        userId: user._id,
+      },
+    },
+    {
+      new: true,
+    },
+  )
+
+  if (!result) {
+    return res.status(500).json({ message: "Failed to update payment" });
   }
 
   res.status(200).json({
@@ -245,5 +303,6 @@ export {
   logout,
   resetPassword,
   signup,
-  verifyOtp,
+  verifyOtp
 };
+
