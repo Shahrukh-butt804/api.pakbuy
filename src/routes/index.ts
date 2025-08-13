@@ -6,6 +6,7 @@ import productRouter from "./product";
 import profileRouter from "./profile";
 import userManagementRouter from "./userManagement";
 import contactRouter from "./contact";
+import newsLetter from "./newLetter";
 
 const router = express.Router();
 
@@ -17,6 +18,7 @@ router.use("/contact-us", contactRouter);
 
 router.use("/order", orderRouter);
 router.use("/cart", cartRouter);
+router.use("/news-letter", newsLetter);
 
 
 // admin routes

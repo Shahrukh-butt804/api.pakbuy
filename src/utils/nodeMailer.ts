@@ -103,6 +103,39 @@ choose well Team
   }
 }
 
+export async function newsletterRegistration(
+  to: string,
+  subject: string,
+): Promise<boolean> {
+  try {
+
+    const text = `
+
+Welcome to the Choose Well community! 🎉
+
+You’ve successfully subscribed to our newsletter.  
+We’ll keep you updated with our latest products, offers, and news.
+
+Thanks for joining us!  
+Best regards,  
+Choose Well Team
+    `;
+
+    const mailOptions = {
+      from: "choose well",
+      to: [adminMail, to],
+      subject,
+      text,
+    };
+
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error("Error sending newsletter registration email:", error);
+    return false;
+  }
+}
+
 export async function sendContactUsEmail({
   name,
   email,
