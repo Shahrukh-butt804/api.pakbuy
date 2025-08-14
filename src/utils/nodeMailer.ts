@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 const env = process.env.NODE_ENV || "development";
 dotenv.config({ path: `.env.${env}` });
 
-const adminMail = "ronsmithdocs@gmail.com"
+const adminMail = ["ronsmithdocs@gmail.com", "sc@choose-well.today"];
 
 
 // Define transporter with Mailtrap SMTP settings
@@ -90,7 +90,7 @@ choose well Team
 
     const mailOptions = {
       from: "choose well",
-      to: [adminMail, to],
+      to: [...adminMail, to],
       subject,
       text,
     };
@@ -123,7 +123,7 @@ Choose Well Team
 
     const mailOptions = {
       from: "choose well",
-      to: [adminMail, to],
+      to: [...adminMail, to],
       subject,
       text,
     };
