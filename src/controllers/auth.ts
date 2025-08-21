@@ -8,6 +8,7 @@ import { MemberShipPayment } from "../models/memberShipPayment";
 import { User } from "../models/user";
 import sendEmail from "../utils/nodeMailer";
 import { tryCatch } from "../utils/tryCatch";
+import { cookieOptions } from "../constants";
 
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
@@ -102,8 +103,6 @@ const signup = tryCatch(async (req: any, res: Response): Promise<any> => {
 const login = tryCatch(async (req: Request, res: Response): Promise<any> => {
   const { email, password, role } = req.body;
 
-  console.log(email, password, role)
-
   if (!email || !password) {
     return res
       .status(400)
@@ -134,11 +133,6 @@ const login = tryCatch(async (req: Request, res: Response): Promise<any> => {
   user.refreshToken = refreshToken;
   await user.save({ validateBeforeSave: false });
 
-  const cookieOptions = {
-    httpOnly: true,
-    secure: true,
-  };
-
   res.cookie("refreshToken", refreshToken, cookieOptions);
   res.cookie("accessToken", accessToken, cookieOptions);
 
@@ -164,15 +158,12 @@ const logout = tryCatch(async (req: any, res: Response): Promise<any> => {
     },
   );
 
-  const options = {
-    httpOnly: false,
-    secure: true,
-  };
+
 
   return res
     .status(200)
-    .clearCookie("accessToken", options)
-    .clearCookie("refreshToken", options)
+    .clearCookie("accessToken", cookieOptions)
+    .clearCookie("refreshToken", cookieOptions)
     .json({
       message: "Logged out successfully!",
       success: true,
