@@ -4,73 +4,73 @@ import { tryCatch } from "../utils/tryCatch";
 import dayjs from "dayjs";
 import { Payment } from "../models/payment";
 import { Subscription } from "../models/subscription";
+import { Order } from "../models/order";
 
 const getReport = tryCatch(async (req: Request, res: Response): Promise<any> => {
-  const totalUsers = await User.countDocuments();
 
-  if (!totalUsers) {
-    return res.status(404).json({ message: "No users found" });
+  const now = dayjs();
+  const monthStart = now.startOf('month').toDate();
+  const monthEnd = now.endOf('month').toDate();
+
+  const monthlyPayments = await Payment.find({
+    createdAt: { $gte: monthStart, $lte: monthEnd }
+  });
+  const monthlyRevenue = monthlyPayments.reduce((sum, p) => sum + p.amount, 0);
+
+  // 2. New Users (last 30 days)
+  const usersLastMonth = await User.find({ createdAt: { $gte: now.subtract(30, 'day').toDate() } });
+  const newUsers = usersLastMonth.length;
+
+  const newOrders = await Order.countDocuments({ status: "confirmed" });
+  const dispatchedOrders = await Order.countDocuments({ status: "dispatched" });
+  const deliveredOrders = await Order.countDocuments({ status: "delivered" });
+
+  // 5. Orders Over Time (e.g., per hour in last 12 hours)
+  const twelveHoursAgo = now.subtract(12, "hour").toDate();
+  const orders = await Order.find({ createdAt: { $gte: twelveHoursAgo } });
+
+  // Group by hour
+  let ordersOverTime: { [hour: string]: number } = {};
+  for (let i = 0; i < 12; i++) {
+    const hourStart = now.subtract(12 - i, "hour").startOf('hour').toDate();
+    const hourEnd = now.subtract(12 - i, "hour").endOf('hour').toDate();
+    const count = orders.filter(o =>
+      o.createdAt >= hourStart && o.createdAt <= hourEnd
+    ).length;
+    ordersOverTime[dayjs(hourStart).format("hh:00 A")] = count;
   }
 
-  // Prepare 6 months ago date
-  const now = dayjs();
-  const sixMonthsAgo = now.subtract(5, 'month').startOf('month').toDate();
+  // 6. Recent Orders Table
+  const recentOrders = await Order.find()
+    .sort({ createdAt: -1 })
+    .limit(10)
+    .populate('user')
 
-  // Fetch users created in the last 6 months
-  const lastSixMonthsData = await User.aggregate([
-    {
-      $match: {
-        createdAt: { $gte: sixMonthsAgo }
-      }
-    },
-    {
-      $group: {
-        _id: {
-          year: { $year: "$createdAt" },
-          month: { $month: "$createdAt" }
-        },
-        count: { $sum: 1 }
-      }
-    },
-    {
-      $sort: {
-        "_id.year": 1,
-        "_id.month": 1
-      }
-    }
-  ]);
+  const recentOrderTable = recentOrders.map((order: any) => ({
+    customer: order.user?.fullName || '',
+    date: dayjs(order.createdAt).format("DD.MM.YYYY"),
+    amount: order.totalAmount.toFixed(2) || 0,
+    status: order.status,
+  }));
 
-  // Purchases funds
-  const payments = await Payment.find();
-  const totalPurchasesAmount = payments.reduce((sum, payment) => sum + payment.amount, 0);
-
-  // Subscriptions funds
+  //   // Subscriptions funds
   const subscriptions = await Subscription.find();
   const totalSubscriptionsAmount = subscriptions.reduce((sum, sub) => sum + sub.amount, 0);
 
-  // Format data to show month name and user counts
-  const formattedData = Array.from({ length: 6 }).map((_, i) => {
-    const targetMonth = now.subtract(5 - i, "month");
-    const match = lastSixMonthsData.find(
-      (d) => d._id.month === targetMonth.month() + 1 && d._id.year === targetMonth.year()
-    );
-
-    return {
-      month: targetMonth.format("MMMM YYYY"),
-      users: match?.count || 0,
-    };
-  });
-
   res.status(200).json({
     success: true,
-    message: "User report fetched successfully",
-    totalUsers,
-    purchasesFunds: totalPurchasesAmount.toFixed(2),
-    subscriptionFunds: totalSubscriptionsAmount.toFixed(2),
-    recentSixMonths: formattedData,
+    monthlyRevenue: monthlyRevenue.toFixed(2) || 0,
+    totalSubscriptionsRevenue: totalSubscriptionsAmount.toFixed(2) || 0,
+    newUsers,
+    orders: {
+      new: newOrders,
+      dispatched: dispatchedOrders,
+      delivered: deliveredOrders,
+    },
+    ordersOverTime, // { "12:00 PM": 10, "01:00 PM": 22, ... }
+    recentOrderTable,
   });
 });
-
 const getAllUsers = tryCatch(async (req: any, res: Response): Promise<any> => {
 
   const page = Number(req.query.page) || 1;

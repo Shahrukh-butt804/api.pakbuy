@@ -132,7 +132,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
   return res.status(200).json({
     message: "Order created successfully!",
     success: true,
-    order,
+    order: updatedOrder,
   });
 });
 
