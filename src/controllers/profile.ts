@@ -12,19 +12,22 @@ const getMyProfile = tryCatch(async (req: any, res: Response): Promise<any> => {
 const updateProfile = tryCatch(
   async (req: any, res: Response): Promise<any> => {
     const { fullName } = req.body;
+    const image = req.files?.image?.[0]?.path || null;
+
+    if (!fullName) {
+      return res.status(400).json({ message: "Please provide full name" });
+    }
+
+    const updateFields: any = { fullName };
+    if (image) {
+      updateFields.image = image
+    }
 
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      {
-        $set: {
-          fullName,
-        },
-      },
-      {
-        new: true,
-      },
+      { $set: updateFields },
+      { new: true },
     );
-
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
