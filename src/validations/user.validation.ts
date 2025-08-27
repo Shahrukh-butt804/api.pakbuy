@@ -25,8 +25,11 @@ const validateUser = [
     .withMessage("Password must be at least 8 characters"),
 
   body("token")
+    .optional()
     .notEmpty()
     .withMessage("Token is required"),
+
+
 ];
 
 const handleValidationErrors = (

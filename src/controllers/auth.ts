@@ -9,6 +9,7 @@ import { User } from "../models/user";
 import sendEmail from "../utils/nodeMailer";
 import { tryCatch } from "../utils/tryCatch";
 import { cookieOptions } from "../constants";
+import { Subscription } from "../models/subscription";
 
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
@@ -20,7 +21,7 @@ const signup = tryCatch(async (req: any, res: Response): Promise<any> => {
     email,
     password,
     role,
-    token
+    token,
   } = req.body;
 
   const image = req.files?.image?.[0]?.path || null;
@@ -32,35 +33,40 @@ const signup = tryCatch(async (req: any, res: Response): Promise<any> => {
   }
 
 
-  // make payment
-  const customer = await stripe.customers.create({
-    email: email,
-    source: token,
-  });
+  // if not admin make payment
+  let payment;
 
-  // Create the charge
-  const charge = await stripe.charges.create({
-    amount: Number(process.env.MEMBERSHIPCHARGES) * 100,
-    currency: 'usd',
-    description: "",
-    customer: customer.id
-  });
+  if (role === "user") {
+    // make payment
+    const customer = await stripe.customers.create({
+      email: email,
+      source: token,
+    });
+
+    // Create the charge
+    const charge = await stripe.charges.create({
+      amount: Number(process.env.MEMBERSHIPCHARGES) * 100,
+      currency: 'usd',
+      description: "",
+      customer: customer.id
+    });
 
 
-  if (charge.status !== "succeeded") {
-    return res.status(400).json({ message: "payment Failed From Stripe" });
+    if (charge.status !== "succeeded") {
+      return res.status(400).json({ message: "payment Failed From Stripe" });
+    }
+
+    payment = await MemberShipPayment.create({
+      amount: Number(process.env.MEMBERSHIPCHARGES) * 100,
+      paymentMethod: "Stripe",
+      metaData: charge
+    });
+
+    if (!payment) {
+      return res.status(500).json({ message: "Failed to create payment" });
+    }
+
   }
-
-  const payment = await MemberShipPayment.create({
-    amount: Number(process.env.MEMBERSHIPCHARGES) * 100,
-    paymentMethod: "Stripe",
-    metaData: charge
-  });
-
-  if (!payment) {
-    return res.status(500).json({ message: "Failed to create payment" });
-  }
-
 
   const user = await User.create({
     fullName,
@@ -77,20 +83,32 @@ const signup = tryCatch(async (req: any, res: Response): Promise<any> => {
   }
 
 
-  const result = await MemberShipPayment.findByIdAndUpdate(
-    payment._id,
-    {
-      $set: {
-        userId: user._id,
+  if (role === "user" && payment) {
+    const result = await MemberShipPayment.findByIdAndUpdate(
+      payment?._id,
+      {
+        $set: {
+          userId: user._id,
+        },
       },
-    },
-    {
-      new: true,
-    },
-  )
+      {
+        new: true,
+      },
+    )
 
-  if (!result) {
-    return res.status(500).json({ message: "Failed to update payment" });
+    if (!result) {
+      return res.status(500).json({ message: "Failed to update payment" });
+    }
+
+    const subscription = await Subscription.create({
+      userId: user._id,
+      amount: payment.amount
+    })
+
+    if (!subscription) {
+      return res.status(501).json({ message: "Failed to create subscription" });
+    }
+
   }
 
   res.status(200).json({
