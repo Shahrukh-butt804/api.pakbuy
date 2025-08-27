@@ -3,6 +3,7 @@ import { User } from "../models/user";
 import { tryCatch } from "../utils/tryCatch";
 import dayjs from "dayjs";
 import { Payment } from "../models/payment";
+import { Subscription } from "../models/subscription";
 
 const getReport = tryCatch(async (req: Request, res: Response): Promise<any> => {
   const totalUsers = await User.countDocuments();
@@ -39,20 +40,24 @@ const getReport = tryCatch(async (req: Request, res: Response): Promise<any> => 
     }
   ]);
 
+  // Purchases funds
   const payments = await Payment.find();
-  const totalAmount = payments.reduce((sum, payment) => sum + payment.amount, 0);
+  const totalPurchasesAmount = payments.reduce((sum, payment) => sum + payment.amount, 0);
 
+  // Subscriptions funds
+  const subscriptions = await Subscription.find();
+  const totalSubscriptionsAmount = subscriptions.reduce((sum, sub) => sum + sub.amount, 0);
 
-  // Format data to show month name and count
+  // Format data to show month name and user counts
   const formattedData = Array.from({ length: 6 }).map((_, i) => {
-    const targetMonth = now.subtract(5 - i, 'month');
+    const targetMonth = now.subtract(5 - i, "month");
     const match = lastSixMonthsData.find(
       (d) => d._id.month === targetMonth.month() + 1 && d._id.year === targetMonth.year()
     );
 
     return {
-      month: targetMonth.format('MMMM YYYY'),
-      users: match?.count || 0
+      month: targetMonth.format("MMMM YYYY"),
+      users: match?.count || 0,
     };
   });
 
@@ -60,8 +65,9 @@ const getReport = tryCatch(async (req: Request, res: Response): Promise<any> => 
     success: true,
     message: "User report fetched successfully",
     totalUsers,
-    funds: totalAmount.toFixed(2),
-    recentSixMonths: formattedData
+    purchasesFunds: totalPurchasesAmount.toFixed(2),
+    subscriptionFunds: totalSubscriptionsAmount.toFixed(2),
+    recentSixMonths: formattedData,
   });
 });
 
