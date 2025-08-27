@@ -7,6 +7,7 @@ import profileRouter from "./profile";
 import userManagementRouter from "./userManagement";
 import contactRouter from "./contact";
 import newsLetter from "./newLetter";
+import resourcesRouter from "./resources";
 
 const router = express.Router();
 
@@ -14,6 +15,7 @@ router.use("/auth", authRouter);
 router.use("/profile", profileRouter);
 router.use("/products", productRouter);
 router.use("/contact-us", contactRouter);
+router.use("/resource", resourcesRouter);
 
 
 router.use("/order", orderRouter);
