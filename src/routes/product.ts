@@ -2,8 +2,8 @@ import { Router } from "express";
 
 import { addProduct, deleteProduct, getAllProducts, getProductById, updateProduct } from "../controllers/product";
 import uploads from "../utils/multer";
-import { validateProduct } from "../validations/product.validation";
-import { handleValidationErrors } from "../validations/user.validation";
+// import { validateProduct } from "../validations/product.validation";
+// import { handleValidationErrors } from "../validations/user.validation";
 
 const productRouter = Router();
 

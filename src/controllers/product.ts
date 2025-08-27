@@ -6,7 +6,7 @@ import { tryCatch } from "../utils/tryCatch";
 
 const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
   const {
-    name, description, products
+    name, description, products, stock
   } = req.body;
 
   const images = req.files?.images
@@ -38,6 +38,7 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
     name,
     price: 0,
     description,
+    stock,
     products: items
   });
 

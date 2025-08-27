@@ -38,7 +38,13 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     if (!pkg) {
       return res.status(404).json({ message: `Package not found for ID: ${item.packageId}` });
     }
+    if (pkg.stock < item.quantity) {
+      return res.status(400).json({ message: `Insufficient stock for  ${pkg.name}` });
+    }
+
+    pkg.stock -= item.quantity;
     totalAmount += pkg.price * item.quantity;
+    await pkg.save();
   }
 
   // twenty percent tax
