@@ -190,10 +190,58 @@ const deleteOrder = tryCatch(
 
   });
 
+const updateOrderStatus = tryCatch(async (req: any, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ["confirmed", "dispatched", "delivered", "cancelled"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: "Invalid status" });
+    }
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    if (order.status == status) {
+      return res.status(400).json({ success: false, message: `Order status is already ${status}` });
+    }
+
+    if (order.status == "delivered" && status == "cancelled") {
+      return res.status(400).json({ success: false, message: "Delivered order cannot be cancelled" });
+    }
+
+    if (order.status === "cancelled") {
+      return res.status(400).json({ success: false, message: "Cancelled order cannot change status" });
+    }
+
+    if (order.status === "delivered" && (status == "dispatched" || status == "confirmed" || status == "pending")) {
+      return res.status(400).json({ success: false, message: `Delivered order cannot revert back to ${status}` });
+    }
+
+    if (order.status === "dispatched" && (status === "confirmed")) {
+      return res.status(400).json({ success: false, message: `Dispatched order cannot revert back to ${status}` });
+    }
+
+    order.status = status;
+    await order.save();
+
+    res.json({
+      success: true,
+      message: `Order status updated to ${status}`,
+      order,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+})
+
 
 export {
   getStripeKeys,
   createOrder, deleteOrder, getAllOrder,
-  getOrderById, getOrderByUser
+  getOrderById, getOrderByUser, updateOrderStatus
 };
 
