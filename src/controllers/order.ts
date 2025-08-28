@@ -42,7 +42,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
       return res.status(400).json({ message: `Insufficient stock for  ${pkg.name}` });
     }
 
-    pkg.stock -= item.quantity;
+    pkg.stock -= Number(item.quantity);
     totalAmount += pkg.price * item.quantity;
     await pkg.save();
   }
@@ -176,19 +176,18 @@ const getOrderByUser = tryCatch(async (req: any, res: Response): Promise<any> =>
 
 });
 
-const deleteOrder = tryCatch(
-  async (req: any, res: Response): Promise<any> => {
+const deleteOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
 
-    const order = await Order.findByIdAndDelete(req.params.id);
-    if (!order) {
-      return res.status(404).json({ message: "order not found" });
-    }
-    return res.status(200).json({
-      message: "order deleted successfully!",
-      order,
-    });
-
+  const order = await Order.findByIdAndDelete(req.params.id);
+  if (!order) {
+    return res.status(404).json({ message: "order not found" });
+  }
+  return res.status(200).json({
+    message: "order deleted successfully!",
+    order,
   });
+
+});
 
 const updateOrderStatus = tryCatch(async (req: any, res: Response): Promise<any> => {
   try {
