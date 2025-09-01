@@ -62,6 +62,11 @@ const getReport = tryCatch(async (req: Request, res: Response): Promise<any> => 
   //   // Subscriptions funds
   const subscriptions = await Subscription.find();
   const totalSubscriptionsAmount = subscriptions.reduce((sum, sub) => sum + sub.amount, 0);
+  const lastMonthOrders = await Order.find({
+    createdAt: { $gte: monthStart, $lte: monthEnd }
+  })
+
+  const lastMonthSale = lastMonthOrders.reduce((sum, o) => sum + o.totalAmount, 0);
 
   res.status(200).json({
     success: true,
@@ -74,6 +79,7 @@ const getReport = tryCatch(async (req: Request, res: Response): Promise<any> => 
       delivered: deliveredOrders,
     },
     ordersOverTime, // { "12:00 PM": 10, "01:00 PM": 22, ... }
+    lastMonthSale,
     recentOrderTable,
   });
 });
