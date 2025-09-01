@@ -137,15 +137,43 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
 });
 
 const getAllOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const keyword = req.query.keyword?.trim() || "";
+  const skip = (page - 1) * limit;
 
-  const orders = await Order.find();
+  const searchQuery = keyword
+    ? {
+      $or: [
+        { orderNote: { $regex: keyword, $options: "i" } },
+        { status: { $regex: keyword, $options: "i" } },
+      ],
+    }
+    : {};
+
+  const [orders, totalDocs] = await Promise.all([
+    Order.find(searchQuery)
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 }),
+    Order.countDocuments(searchQuery),
+  ]);
 
   return res.status(200).json({
-    message: "orders fetched successfully!",
+    message: "Orders fetched successfully!",
     orders,
+    pagination: {
+      totalDocs,
+      currentPage: page,
+      totalPages: Math.ceil(totalDocs / limit),
+      hasNextPage: page * limit < totalDocs,
+      hasPrevPage: page > 1,
+    },
   });
-
 });
+
+
+
 const getOrderById = tryCatch(async (req: any, res: Response): Promise<any> => {
 
   const order = await Order.findById(req.params.id).populate("user").populate({

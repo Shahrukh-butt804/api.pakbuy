@@ -99,15 +99,21 @@ const getAllUsers = tryCatch(async (req: any, res: Response): Promise<any> => {
     }
     : {};
 
-  const [Users, totalCount] = await Promise.all([
-    User.find(searchQuery).skip(skip).limit(limit),
+  const [Users, totalDocs] = await Promise.all([
+    User.find(searchQuery).skip(skip).limit(limit).sort({ createdAt: -1 }),
     User.countDocuments(searchQuery),
   ]);
 
   res.status(200).json({
     message: "Users  fetched successfully!",
-    totalCount,
     Users,
+    pagination: {
+      totalDocs,
+      currentPage: page,
+      totalPages: Math.ceil(totalDocs / limit),
+      hasNextPage: page * limit < totalDocs,
+      hasPrevPage: page > 1,
+    },
   });
 
 });
