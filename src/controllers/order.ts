@@ -148,7 +148,9 @@ const getAllOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
 });
 const getOrderById = tryCatch(async (req: any, res: Response): Promise<any> => {
 
-  const order = await Order.findById(req.params.id).populate("user");
+  const order = await Order.findById(req.params.id).populate("user").populate({
+    path: "products.packageId",
+  });;
 
   if (!order) {
     return res.status(404).json({ message: "order not found" });
