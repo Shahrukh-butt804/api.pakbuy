@@ -31,14 +31,20 @@ const getReport = tryCatch(async (req: Request, res: Response): Promise<any> => 
 
   // Group by hour
   let ordersOverTime: { [hour: string]: number } = {};
-  for (let i = 0; i < 12; i++) {
-    const hourStart = now.subtract(12 - i, "hour").startOf('hour').toDate();
-    const hourEnd = now.subtract(12 - i, "hour").endOf('hour').toDate();
-    const count = orders.filter(o =>
-      o.createdAt >= hourStart && o.createdAt <= hourEnd
+
+  for (let i = 0; i < 6; i++) {
+    // go back i hours from now
+    const hourStart = dayjs().subtract(i, "hour").startOf("hour").toDate();
+    const hourEnd = dayjs().subtract(i, "hour").endOf("hour").toDate();
+
+    const count = orders.filter(
+      (o) => o.createdAt >= hourStart && o.createdAt <= hourEnd
     ).length;
+
+    // format hour label (show in order later)
     ordersOverTime[dayjs(hourStart).format("hh:00 A")] = count;
   }
+
 
   // 6. Recent Orders Table
   const recentOrders = await Order.find()
