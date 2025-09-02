@@ -85,6 +85,13 @@ const productUpload = multer({
   { name: 'images', maxCount: 10 },
 ]);
 
+const updataProductUpload = multer({
+  storage: createStorage("product/"),
+  fileFilter: createFileFilter(["image/"]),
+  limits: createLimits(10),
+}).any();
+
+
 
 const profileUpload = multer({
   storage: createStorage('profile/'),
@@ -99,4 +106,5 @@ export default {
   licenseUpload: errorHandler(licenseUpload),
   productUpload: errorHandler(productUpload),
   profileUpload: errorHandler(profileUpload),
+  updataProductUpload: errorHandler(updataProductUpload),
 };

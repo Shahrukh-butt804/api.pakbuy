@@ -56,12 +56,63 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
   });
 });
 
+// const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
+//   const { name, description, products, discountPrice } = req.body;
+//   const images = req.files?.images;
+
+//   const pkg: any = await Package.findById(req.params.id);
+
+//   if (!pkg) {
+//     return res.status(404).json({ message: "Package not found" });
+//   }
+
+//   if (name) pkg.name = name;
+//   if (description) pkg.description = description;
+//   if (discountPrice) pkg.discountPrice = discountPrice;
+
+//   if (products) {
+//     let parsedProducts;
+//     try {
+//       parsedProducts = JSON.parse(products);
+//     } catch (err) {
+//       return res.status(400).json({ message: "Invalid products JSON" });
+//     }
+
+//     if (!Array.isArray(parsedProducts) || parsedProducts.length === 0) {
+//       return res.status(400).json({ message: "At least one product is required" });
+//     }
+
+//     // Handle images (optional)
+//     const uploadedImages = images || [];
+
+//     // Re-map product list
+//     const updatedProducts = parsedProducts.map((item: any, index: number) => {
+//       return {
+//         name: item.name,
+//         price: item.price,
+//         description: item.description,
+//         image: uploadedImages[index]?.path || pkg.products[index]?.image || "", // fallback to existing image
+//       };
+//     });
+
+//     pkg.products = updatedProducts;
+//   }
+
+//   await pkg.save();
+
+//   return res.status(200).json({
+//     message: "Product updated successfully!",
+//     success: true,
+//     pkg,
+//   });
+// });
+
+
 const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
   const { name, description, products, discountPrice } = req.body;
-  const images = req.files?.images;
+  const files = req.files as Express.Multer.File[];
 
   const pkg: any = await Package.findById(req.params.id);
-
   if (!pkg) {
     return res.status(404).json({ message: "Package not found" });
   }
@@ -82,16 +133,17 @@ const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => 
       return res.status(400).json({ message: "At least one product is required" });
     }
 
-    // Handle images (optional)
-    const uploadedImages = images || [];
-
-    // Re-map product list
     const updatedProducts = parsedProducts.map((item: any, index: number) => {
+      const fileKey = `products[${index}][image]`;
+      const uploadedFile = files.find((f) => f.fieldname === fileKey);
+
       return {
         name: item.name,
         price: item.price,
         description: item.description,
-        image: uploadedImages[index]?.path || pkg.products[index]?.image || "", // fallback to existing image
+        image: uploadedFile
+          ? uploadedFile.path
+          : pkg.products[index]?.image || "",
       };
     });
 
