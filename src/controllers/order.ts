@@ -172,8 +172,6 @@ const getAllOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
   });
 });
 
-
-
 const getOrderById = tryCatch(async (req: any, res: Response): Promise<any> => {
 
   const order = await Order.findById(req.params.id).populate("user").populate({

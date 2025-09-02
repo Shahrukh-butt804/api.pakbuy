@@ -107,52 +107,37 @@ const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => 
 
 const getAllProducts = tryCatch(async (req: any, res: Response): Promise<any> => {
 
-  // const page = Number(req.query.page) || 1;
-  // const limit = Number(req.query.limit) || 10;
-  // const rawCategories = req.query.categories?.split(",") || [];
-  // const categories = rawCategories.filter((cat: string) => cat.trim() !== "");
-  // const keyword = req.query.keyword?.trim() || "";
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const keyword = req.query.keyword?.trim() || "";
+  const skip = (page - 1) * limit;
 
-  // const priceRange = req.query.priceRange?.split(",") || [];
-  // const minPrice = Number(priceRange[0]);
-  // const maxPrice = Number(priceRange[1]);
+  const searchQuery = keyword
+    ? {
+      $or: [
+        { name: { $regex: keyword, $options: "i" } },
+        { description: { $regex: keyword, $options: "i" } },
+      ],
+    }
+    : {};
 
-  // const skip = (page - 1) * limit;
-
-  // const query: any = {};
-  // if (categories.length > 0) {
-  //   query.category = { $in: categories };
-  // }
-
-  // if (keyword) {
-  //   query.$or = [
-  //     { name: { $regex: keyword, $options: "i" } },
-  //     { description: { $regex: keyword, $options: "i" } },
-  //   ];
-  // }
-
-  // if (!isNaN(minPrice) && !isNaN(maxPrice)) {
-  //   query.price = { $gte: minPrice, $lte: maxPrice }
-  // }
-
-  // if (req.query.xpro === "false") {
-  //   query.xpro = false;
-  // }
-
-  // const [products, totalCount] = await Promise.all([
-  //   Package.find(query).skip(skip).limit(limit),
-  //   Package.countDocuments(query),
-  // ]);
-
-
-  const packages = await Package.find({});
-
+  const [packages, totalDocs] = await Promise.all([
+    Package.find(searchQuery).skip(skip).limit(limit).sort({ createdAt: -1 }),
+    Package.countDocuments(searchQuery),
+  ]);
 
   return res.status(200).json({
-    message: "packages fetched successfully!",
+    message: "Users  fetched successfully!",
     packages,
-    // totalCount,
+    pagination: {
+      totalDocs,
+      currentPage: page,
+      totalPages: Math.ceil(totalDocs / limit),
+      hasNextPage: page * limit < totalDocs,
+      hasPrevPage: page > 1,
+    },
   });
+
 
 });
 
