@@ -6,7 +6,7 @@ import { tryCatch } from "../utils/tryCatch";
 
 const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
   const {
-    name, description, products, stock
+    name, description, products, stock, discountPrice
   } = req.body;
 
   const images = req.files?.images
@@ -39,6 +39,7 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
     price: 0,
     description,
     stock,
+    discountPrice,
     products: items
   });
 
@@ -56,7 +57,7 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
 });
 
 const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
-  const { name, description, products } = req.body;
+  const { name, description, products, discountPrice } = req.body;
   const images = req.files?.images;
 
   const pkg: any = await Package.findById(req.params.id);
@@ -67,6 +68,7 @@ const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => 
 
   if (name) pkg.name = name;
   if (description) pkg.description = description;
+  if (discountPrice) pkg.discountPrice = discountPrice;
 
   if (products) {
     let parsedProducts;

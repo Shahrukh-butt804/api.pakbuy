@@ -24,7 +24,4 @@ export const validateProduct = [
     .isInt({ min: 0 })
     .withMessage("Stock must be a non-negative integer"),
 
-  body("categoryId")
-    .notEmpty()
-    .withMessage("categoryId is required"),
 ];
