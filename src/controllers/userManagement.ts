@@ -93,7 +93,7 @@ const getAllUsers = tryCatch(async (req: any, res: Response): Promise<any> => {
   const searchQuery = keyword
     ? {
       $or: [
-        { name: { $regex: keyword, $options: "i" } },
+        { fullName: { $regex: keyword, $options: "i" } },
         { email: { $regex: keyword, $options: "i" } },
       ],
     }
