@@ -9,6 +9,6 @@ const resourceSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-});
+}, { timestamps: true });
 
 export const Resource = mongoose.model("Resource", resourceSchema);
