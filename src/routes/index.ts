@@ -8,6 +8,7 @@ import userManagementRouter from "./userManagement";
 import contactRouter from "./contact";
 import newsLetter from "./newLetter";
 import resourcesRouter from "./resources";
+import couponsRouter from "./coupons";
 
 const router = express.Router();
 
@@ -16,6 +17,7 @@ router.use("/profile", profileRouter);
 router.use("/products", productRouter);
 router.use("/contact-us", contactRouter);
 router.use("/resource", resourcesRouter);
+router.use("/coupons", couponsRouter);
 
 
 router.use("/order", orderRouter);
