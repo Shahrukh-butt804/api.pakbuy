@@ -104,9 +104,36 @@ const deleteCoupon = tryCatch(async (req: any, res: Response): Promise<any> => {
 
 });
 
+const toggleTokenStatus = tryCatch(async (req: any, res: Response): Promise<any> => {
+
+  const coupon: any = await Coupon.findById(req.params.id);
+  coupon.isActive = !coupon.isActive;
+  await coupon.save({ revalidateBeforeSave: false });
+  res.status(200).json({
+    message: "Coupon Status Changed Successfully!",
+    success: true,
+    coupon,
+  });
+});
+
+const validateCoupon = tryCatch(async (req: any, res: Response): Promise<any> => {
+  const { code } = req.body
+  const coupon: any = await Coupon.findOne({ code: code, isActive: true })
+
+  if (!coupon) {
+    return res.status(400).json({ message: "Invalid Coupon Code" });
+  }
+
+  res.status(200).json({
+    message: "Coupon fetched successfully!",
+    success: true,
+    coupon,
+  });
+});
+
 
 
 export {
-  addCoupon, deleteCoupon, getCouponbyId, getCoupons, updateCoupon
+  addCoupon, deleteCoupon, getCouponbyId, getCoupons, updateCoupon, toggleTokenStatus, validateCoupon
 };
 

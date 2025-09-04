@@ -9,6 +9,7 @@ import { Payment } from "../models/payment";
 import { orderConfirmation } from "../utils/nodeMailer";
 import { tryCatch } from "../utils/tryCatch";
 import { Package } from "../models/product";
+import { Coupon } from "../models/coupon";
 
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
@@ -27,6 +28,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     token,
     orderNote,
     products,
+    couponId
   } = req.body;
 
   let totalAmount = 0;
@@ -49,6 +51,37 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
 
   // twenty percent tax
   totalAmount += Math.round(totalAmount * 0.2);
+
+  if (couponId) {
+    const coupon = await Coupon.findById(couponId);
+
+    if (!coupon) {
+      return res.status(404).json({ message: "Invalid Coupon Id" });
+    }
+    if (!coupon.isActive) {
+      return res.status(400).json({ message: "Coupon is not active" });
+    }
+    if (coupon.limit <= 0) {
+      return res.status(400).json({ message: "Coupon limit exceeded" });
+    }
+
+    const couponUsedByUser = coupon.usedBy.filter((id: any) => id.equals(req.user._id)).length;
+
+    if (couponUsedByUser >= coupon.perUserLimit) {
+      return res.status(400).json({ message: "Coupon limit per user exceeded" });
+    }
+
+    totalAmount = Math.max(
+      0,
+      coupon.type === "amount"
+        ? totalAmount - coupon.value
+        : totalAmount - (totalAmount * coupon.value) / 100
+    );
+    coupon.limit -= 1;
+    coupon.usedBy.push(req.user._id);
+    await coupon.save();
+  }
+
 
   const order = await Order.create({
     user: req.user._id ? req.user._id : null,

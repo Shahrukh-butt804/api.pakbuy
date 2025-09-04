@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addCoupon, deleteCoupon, getCouponbyId, getCoupons, updateCoupon } from "../controllers/coupons";
+import { addCoupon, deleteCoupon, getCouponbyId, getCoupons, toggleTokenStatus, updateCoupon, validateCoupon } from "../controllers/coupons";
 import { couponValidation } from "../validations/coupon-validation";
 import { handleValidationErrors } from "../validations/user.validation";
 
@@ -11,6 +11,8 @@ couponsRouter.route("/update-coupon/:id").put(updateCoupon);
 couponsRouter.route("/get-all-coupons").get(getCoupons);
 couponsRouter.route("/get-coupon-by-id/:id").get(getCouponbyId);
 couponsRouter.route("/delete-coupon/:id").delete(deleteCoupon);
+couponsRouter.route("/toggle-coupon-status/:id").put(toggleTokenStatus);
+couponsRouter.route("/validate-coupon").post(validateCoupon);
 
 
 
