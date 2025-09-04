@@ -70,8 +70,8 @@ const getReport = tryCatch(async (req: Request, res: Response): Promise<any> => 
 
   res.status(200).json({
     success: true,
-    monthlyRevenue: monthlyRevenue.toFixed(2) || 0,
-    totalSubscriptionsRevenue: totalSubscriptionsAmount.toFixed(2) || 0,
+    monthlyRevenue: (monthlyRevenue / 100).toFixed(2) || "0.00",
+    totalSubscriptionsRevenue: (totalSubscriptionsAmount / 100).toFixed(2) || "0.00",
     newUsers,
     orders: {
       new: newOrders,
