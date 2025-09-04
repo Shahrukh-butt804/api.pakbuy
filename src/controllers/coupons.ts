@@ -124,6 +124,10 @@ const validateCoupon = tryCatch(async (req: any, res: Response): Promise<any> =>
     return res.status(400).json({ message: "Invalid Coupon Code" });
   }
 
+  if (coupon.expiryDate < new Date()) {
+    return res.status(400).json({ message: "Coupon Expired" });
+  }
+
   res.status(200).json({
     message: "Coupon fetched successfully!",
     success: true,

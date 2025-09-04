@@ -50,7 +50,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
   }
 
   // twenty percent tax
-  totalAmount += Math.round(totalAmount * 0.2);
+  totalAmount += totalAmount * 0.2;
 
   if (couponId) {
     const coupon = await Coupon.findById(couponId);
@@ -64,7 +64,9 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     if (coupon.limit <= 0) {
       return res.status(400).json({ message: "Coupon limit exceeded" });
     }
-
+    if (new Date(coupon.expiryDate) < new Date()) {
+      return res.status(400).json({ message: "Coupon is expired" });
+    }
     const couponUsedByUser = coupon.usedBy.filter((id: any) => id.equals(req.user._id)).length;
 
     if (couponUsedByUser >= coupon.perUserLimit) {
