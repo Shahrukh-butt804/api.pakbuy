@@ -109,7 +109,7 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
 
 
 const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
-  const { name, description, products, discountPrice } = req.body;
+  const { name, description, stock, products, discountPrice } = req.body;
   const files = req.files as Express.Multer.File[];
 
   const pkg: any = await Package.findById(req.params.id);
@@ -120,6 +120,7 @@ const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => 
   if (name) pkg.name = name;
   if (description) pkg.description = description;
   if (discountPrice) pkg.discountPrice = discountPrice;
+  if (stock) pkg.stock = stock;
 
   if (products) {
     let parsedProducts;
