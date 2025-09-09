@@ -46,7 +46,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
 
     pkg.stock -= Number(item.quantity);
     totalAmount += pkg.price * item.quantity;
-    const takenCodes = pkg.codes.splice(0, item.quantity);
+    const takenCodes = pkg?.codes?.splice(0, item.quantity) || "N/A";
     allCodes.push(...takenCodes);
     await pkg.save({ validateBeforeSave: false });
   }
