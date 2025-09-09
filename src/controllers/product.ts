@@ -82,8 +82,10 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
 });
 
 const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
-  const { name, description, stock, products, discountPrice } = req.body;
+  const { name, description, stock, products, discountPrice, codes } = req.body;
   const files = req.files as Express.Multer.File[];
+
+  const collectionImage = req.files?.filter((f: any) => f.fieldname === "collectionImage")[0]?.path
 
   const pkg: any = await Package.findById(req.params.id);
   if (!pkg) {
@@ -94,6 +96,24 @@ const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => 
   if (description) pkg.description = description;
   if (discountPrice) pkg.discountPrice = discountPrice;
   if (stock) pkg.stock = stock;
+  if (collectionImage) pkg.image = collectionImage
+
+  let parsedCodes
+
+  if (codes) {
+    parsedCodes = JSON.parse(codes);
+    if (!Array.isArray(parsedCodes) || parsedCodes.length === 0) {
+      return res.status(400).json({ message: "At least one code is required" });
+    }
+
+    if (parsedCodes.length < Number(stock)) {
+      return res.status(400).json({
+        message: `Enter ${Number(stock) - parsedCodes.length} more Codes`,
+      });
+    }
+    pkg.codes = parsedCodes;
+  }
+
 
   if (products) {
     let parsedProducts;
