@@ -83,6 +83,7 @@ const productUpload = multer({
   limits: createLimits(10),
 }).fields([
   { name: 'images', maxCount: 10 },
+  { name: 'collectionImage', maxCount: 10 },
 ]);
 
 const updataProductUpload = multer({

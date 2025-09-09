@@ -6,16 +6,39 @@ import { tryCatch } from "../utils/tryCatch";
 
 const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
   const {
-    name, description, products, stock, discountPrice
+    name, description, products, stock, discountPrice, codes
   } = req.body;
 
+
   const images = req.files?.images
+  const collectionImage = req.files?.collectionImage[0].path
 
   if (!images || images.length == 0) {
     return res.status(400).json({
       message: "image is required",
     });
   }
+
+  if (!collectionImage) {
+    return res.status(400).json({
+      message: "collectionImage is required",
+    });
+  }
+
+  let parsedCodes = JSON.parse(codes)
+
+  if (!parsedCodes || parsedCodes.length == 0) {
+    return res.status(400).json({
+      message: "codes is required",
+    });
+  }
+
+  if (parsedCodes.length < Number(stock)) {
+    return res.status(400).json({
+      message: `Enter ${Number(stock) - parsedCodes.length} more Codes`,
+    });
+  }
+
 
   let items = JSON.parse(products)
 
@@ -39,6 +62,8 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
     price: 0,
     description,
     stock,
+    image: collectionImage,
+    codes: parsedCodes,
     discountPrice,
     products: items
   });
@@ -55,58 +80,6 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
     product,
   });
 });
-
-// const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
-//   const { name, description, products, discountPrice } = req.body;
-//   const images = req.files?.images;
-
-//   const pkg: any = await Package.findById(req.params.id);
-
-//   if (!pkg) {
-//     return res.status(404).json({ message: "Package not found" });
-//   }
-
-//   if (name) pkg.name = name;
-//   if (description) pkg.description = description;
-//   if (discountPrice) pkg.discountPrice = discountPrice;
-
-//   if (products) {
-//     let parsedProducts;
-//     try {
-//       parsedProducts = JSON.parse(products);
-//     } catch (err) {
-//       return res.status(400).json({ message: "Invalid products JSON" });
-//     }
-
-//     if (!Array.isArray(parsedProducts) || parsedProducts.length === 0) {
-//       return res.status(400).json({ message: "At least one product is required" });
-//     }
-
-//     // Handle images (optional)
-//     const uploadedImages = images || [];
-
-//     // Re-map product list
-//     const updatedProducts = parsedProducts.map((item: any, index: number) => {
-//       return {
-//         name: item.name,
-//         price: item.price,
-//         description: item.description,
-//         image: uploadedImages[index]?.path || pkg.products[index]?.image || "", // fallback to existing image
-//       };
-//     });
-
-//     pkg.products = updatedProducts;
-//   }
-
-//   await pkg.save();
-
-//   return res.status(200).json({
-//     message: "Product updated successfully!",
-//     success: true,
-//     pkg,
-//   });
-// });
-
 
 const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
   const { name, description, stock, products, discountPrice } = req.body;

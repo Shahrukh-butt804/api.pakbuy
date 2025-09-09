@@ -29,6 +29,10 @@ const packageSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  image: {
+    type: String,
+    required: true
+  },
   discountPrice: {
     type: Number,
     default: 0
@@ -41,6 +45,7 @@ const packageSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  codes: [String],
   products: [productSchema]
 
 })
