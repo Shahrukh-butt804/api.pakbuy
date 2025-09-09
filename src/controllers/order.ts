@@ -48,7 +48,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     totalAmount += pkg.price * item.quantity;
     const takenCodes = pkg.codes.splice(0, item.quantity);
     allCodes.push(...takenCodes);
-    await pkg.save();
+    await pkg.save({ validateBeforeSave: false });
   }
 
   // twenty percent tax
