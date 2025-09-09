@@ -32,7 +32,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
   } = req.body;
 
   let totalAmount = 0;
-
+  let allCodes = [];
 
   for (const item of products) {
     const pkg = await Package.findById(item.packageId);
@@ -46,6 +46,8 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
 
     pkg.stock -= Number(item.quantity);
     totalAmount += pkg.price * item.quantity;
+    const takenCodes = pkg.codes.splice(0, item.quantity);
+    allCodes.push(...takenCodes);
     await pkg.save();
   }
 
@@ -156,6 +158,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
       orderId: order?._id.toString(),
       totalAmount: totalAmount,
       orderDate: new Date().toLocaleDateString(),
+      codes: allCodes,
       trackingLink: `/track-order/${order._id}`,
     }
   );
