@@ -47,7 +47,10 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     pkg.stock -= Number(item.quantity);
     totalAmount += pkg.price * item.quantity;
     const takenCodes = pkg?.codes?.splice(0, item.quantity) || "N/A";
-    allCodes.push(...takenCodes);
+    allCodes.push({
+      name: pkg.name,
+      codes: takenCodes
+    });
     await pkg.save({ validateBeforeSave: false });
   }
 
@@ -158,7 +161,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
       orderId: order?._id.toString(),
       totalAmount: totalAmount,
       orderDate: new Date().toLocaleDateString(),
-      codes: allCodes,
+      packageData: allCodes,
       trackingLink: `/track-order/${order._id}`,
     }
   );

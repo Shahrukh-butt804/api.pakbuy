@@ -52,13 +52,13 @@ export async function orderConfirmation(
     totalAmount: number;
     orderDate: string;
     trackingLink: string;
-    codes: string[]
+    packageData: any
   }
 ): Promise<boolean> {
   try {
     const { customerName, orderId,
       // items,
-      totalAmount, orderDate, trackingLink, codes } = orderDetails;
+      totalAmount, orderDate, trackingLink, packageData } = orderDetails;
 
     // const itemList = items
     //   .map(
@@ -83,7 +83,7 @@ We’re processing your order and will notify you once it’s ready.
 
 📦 Tracking Link: ${process.env.BASE_URL + trackingLink}
 
-Codes : ${codes.join(", ")}
+   ${packageData?.map((item: any) => ` Codes - ${item.name} = ${item.codes.join(", ")}`).join("\n")}
 
 Thank you for choosing choose well!
 
