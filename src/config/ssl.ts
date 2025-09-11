@@ -24,7 +24,7 @@ try {
     credentials = { key, cert, ca };
   } else if (NODE_ENV === "live") {
     const combinedFile = fs.readFileSync(
-      "/var/cpanel/ssl/apache_tls/snapchores.digital/combined",
+      "/var/cpanel/ssl/apache_tls/realmoneydragon.io/combined",
       "utf8",
     );
     const [key, cert, ca] = combinedFile.split(/\n(?=-----BEGIN)/);
