@@ -26,6 +26,9 @@ app.use(cookieParser());
 app.use(express.static("public"));
 app.use(helmet());
 
+
+console.log(process.env.NODE_ENV, "Environment");
+
 // SSL
 var httpsServer;
 if (process.env.NODE_ENV === "customdev")
