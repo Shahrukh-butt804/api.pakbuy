@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Collection } from "../models/collection";
 import { Product } from "../models/product";
 import { tryCatch } from "../utils/tryCatch";
+import { recalcPrice } from "../utils/recalculateProductPrice";
 
 
 const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
@@ -227,6 +228,29 @@ const deleteProduct = tryCatch(async (req: Request, res: Response): Promise<any>
 
   if (!product) {
     return res.status(404).json({ message: "Product not found" });
+  }
+
+  const affectedCollections = await Collection.find({ products: product._id });
+
+
+  await Collection.updateMany(
+    { products: product._id },
+    { $pull: { products: product._id } }
+  );
+
+  // recalc price for each affected collection
+  for (const col of affectedCollections) {
+    // refetch the updated collection (products array after pull)
+    const updated = await Collection.findById(col._id);
+    if (!updated) continue;
+
+    // recalc price
+    await recalcPrice(updated as any);
+    // persist the new price
+    await Collection.updateOne(
+      { _id: updated._id },
+      { $set: { CollectionPrice: updated.CollectionPrice } }
+    );
   }
 
   return res.status(200).json({

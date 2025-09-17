@@ -13,7 +13,7 @@ const addToCart = tryCatch(async (req: any, res: Response): Promise<any> => {
     return res.status(400).json({ message: "Invalid product or quantity" });
   }
 
-  const product = await Collection.findById(productId);
+  const product: any = await Collection.findById(productId);
 
   if (!product) {
     return res.status(404).json({ message: "Product not found" });
