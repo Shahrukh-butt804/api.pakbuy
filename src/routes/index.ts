@@ -9,11 +9,13 @@ import contactRouter from "./contact";
 import newsLetter from "./newLetter";
 import resourcesRouter from "./resources";
 import couponsRouter from "./coupons";
+import collectionRouter from "./collection";
 
 const router = express.Router();
 
 router.use("/auth", authRouter);
 router.use("/profile", profileRouter);
+router.use("/collections", collectionRouter);
 router.use("/products", productRouter);
 router.use("/contact-us", contactRouter);
 router.use("/resource", resourcesRouter);

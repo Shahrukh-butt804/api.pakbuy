@@ -1,27 +1,16 @@
 import { Request, Response } from "express";
 import { Collection } from "../models/collection";
+import { Product } from "../models/product";
 import { tryCatch } from "../utils/tryCatch";
 
 
-
 const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
-  const {
-    name, description, products, stock, discountPrice, codes
-  } = req.body;
-
-
+  const { name, price, description, stock, codes, collectionIds } = req.body;
   const images = req.files?.images
-  const collectionImage = req.files?.collectionImage[0].path
 
   if (!images || images.length == 0) {
     return res.status(400).json({
       message: "image is required",
-    });
-  }
-
-  if (!collectionImage) {
-    return res.status(400).json({
-      message: "collectionImage is required",
     });
   }
 
@@ -40,65 +29,78 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
   }
 
 
-  let items = JSON.parse(products)
-
-  if (!items || items.length == 0) {
-    return res.status(400).json({
-      message: "product is required",
-    });
-  }
-
-  items = items.map((item: any, index: any) => {
-    return {
-      name: item.name,
-      price: item.price,
-      description: item.description,
-      image: images[index].path
-    }
-  })
-
-  const product = await Collection.create({
+  const product = await Product.create({
     name,
-    price: 0,
+    price,
     description,
     stock,
-    image: collectionImage,
-    codes: parsedCodes,
-    discountPrice,
-    products: items
+    image: images[0].path,
+    codes: parsedCodes
   });
 
   if (!product) {
     return res.status(501).json({
-      message: "something went wrong while creating Collection",
+      message: "something went wrong while creating Product",
+    });
+  }
+
+  if (!collectionIds || collectionIds.length === 0) {
+    return res.status(400).json({ message: "Collection IDs are required" });
+  }
+
+
+  const updateCollection = await Collection.updateMany(
+    { _id: { $in: collectionIds } },
+    { $addToSet: { products: product._id } } // prevents duplicates
+  )
+
+  if (updateCollection.matchedCount === 0) {
+    return res.status(404).json({
+      message: "No collections found with the given IDs",
     });
   }
 
   res.status(200).json({
-    message: "Collection created successfully!",
+    message: "Product created and added to collections successfully",
     success: true,
     product,
   });
+
+
 });
 
 const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
-  const { name, description, stock, products, discountPrice, codes } = req.body;
-  const files = req.files as Express.Multer.File[];
+  const { name, price, description, stock, codes, collectionIds } = req.body;
 
   const collectionImage = req.files?.filter((f: any) => f.fieldname === "collectionImage")[0]?.path
 
-  const pkg: any = await Collection.findById(req.params.id);
-  if (!pkg) {
-    return res.status(404).json({ message: "Collection not found" });
+  const product: any = await Product.findById(req.params.id);
+
+  if (!product) {
+    return res.status(404).json({ message: "Product not found" });
   }
 
-  if (name) pkg.name = name;
-  if (description) pkg.description = description;
-  if (discountPrice) pkg.discountPrice = discountPrice;
-  if (stock) pkg.stock = stock;
-  if (collectionImage) pkg.image = collectionImage
+  if (name) product.name = name;
+  if (price) product.price = price;
+  if (description) product.description = description;
+  if (stock) product.stock = stock;
+  if (collectionImage) product.image = collectionImage;
+  if (collectionIds && collectionIds.length > 0) {
 
-  let parsedCodes
+    const updateCollection = await Collection.updateMany(
+      { _id: { $in: collectionIds } },
+      { $addToSet: { products: product._id } } // prevents duplicates
+    )
+
+    if (updateCollection.matchedCount === 0) {
+      return res.status(404).json({
+        message: "No collections found with the given IDs",
+      });
+    }
+
+  }
+
+  let parsedCodes;
 
   if (codes) {
     parsedCodes = JSON.parse(codes);
@@ -111,45 +113,16 @@ const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => 
         message: `Enter ${Number(stock) - parsedCodes.length} more Codes`,
       });
     }
-    pkg.codes = parsedCodes;
+    product.codes = parsedCodes;
   }
 
 
-  if (products) {
-    let parsedProducts;
-    try {
-      parsedProducts = JSON.parse(products);
-    } catch (err) {
-      return res.status(400).json({ message: "Invalid products JSON" });
-    }
-
-    if (!Array.isArray(parsedProducts) || parsedProducts.length === 0) {
-      return res.status(400).json({ message: "At least one product is required" });
-    }
-
-    const updatedProducts = parsedProducts.map((item: any, index: number) => {
-      const fileKey = `products[${index}][image]`;
-      const uploadedFile = files.find((f) => f.fieldname === fileKey);
-
-      return {
-        name: item.name,
-        price: item.price,
-        description: item.description,
-        image: uploadedFile
-          ? uploadedFile.path
-          : pkg.products[index]?.image || "",
-      };
-    });
-
-    pkg.products = updatedProducts;
-  }
-
-  await pkg.save();
+  await product.save();
 
   return res.status(200).json({
     message: "Product updated successfully!",
     success: true,
-    pkg,
+    product,
   });
 });
 
@@ -169,14 +142,14 @@ const getAllProducts = tryCatch(async (req: any, res: Response): Promise<any> =>
     }
     : {};
 
-  const [packages, totalDocs] = await Promise.all([
-    Collection.find(searchQuery).skip(skip).limit(limit).sort({ createdAt: -1 }),
-    Collection.countDocuments(searchQuery),
+  const [products, totalDocs] = await Promise.all([
+    Product.find(searchQuery).skip(skip).limit(limit).sort({ createdAt: -1 }),
+    Product.countDocuments(searchQuery),
   ]);
 
   return res.status(200).json({
-    message: "Users  fetched successfully!",
-    packages,
+    message: "Products fetched successfully!",
+    products,
     pagination: {
       totalDocs,
       currentPage: page,
@@ -191,34 +164,33 @@ const getAllProducts = tryCatch(async (req: any, res: Response): Promise<any> =>
 
 const getProductById = tryCatch(async (req: any, res: Response): Promise<any> => {
 
-  const pkg = await Collection.findById(req.params.id);
+  const product = await Product.findById(req.params.id);
 
-  if (!pkg) {
-    return res.status(404).json({ message: "Collection not found" });
+  if (!product) {
+    return res.status(404).json({ message: "Product not found" });
   }
   return res.status(200).json({
-    message: "Collection fetched successfully!",
-    pkg,
+    message: "Product fetched successfully!",
+    product,
   });
 
 
 });
 
-const deleteProduct = tryCatch(
-  async (req: Request, res: Response): Promise<any> => {
+const deleteProduct = tryCatch(async (req: Request, res: Response): Promise<any> => {
 
-    const pkg = await Collection.findByIdAndDelete(req.params.id);
+  const product = await Product.findByIdAndDelete(req.params.id);
 
-    if (!pkg) {
-      return res.status(404).json({ message: "Collection not found" });
-    }
+  if (!product) {
+    return res.status(404).json({ message: "Product not found" });
+  }
 
-    return res.status(200).json({
-      message: "Product deleted successfully!",
-      success: true,
-      pkg,
-    })
-  });
+  return res.status(200).json({
+    message: "Product deleted successfully!",
+    success: true,
+    product,
+  })
+});
 
 
 export {

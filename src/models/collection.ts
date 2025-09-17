@@ -5,32 +5,21 @@ const collectionSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  price: {
+  description: {
+    type: String,
+    required: true
+  },
+  CollectionPrice: {
     type: Number,
-    required: true,
     default: 0
   },
   image: {
     type: String,
     required: true
   },
-  // discountPrice: {
-  //   type: Number,
-  //   default: 0
-  // },
-  description: {
-    type: String,
-    required: true
-  },
-  stock: {
-    type: Number,
-    required: true
-  },
-  codes: [String],
   products: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product',
-    required: true
   }]
 
 })

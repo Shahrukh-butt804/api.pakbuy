@@ -24,4 +24,12 @@ export const validateProduct = [
     .isInt({ min: 0 })
     .withMessage("Stock must be a non-negative integer"),
 
+  body("codes")
+    .notEmpty()
+    .withMessage("Codes are required"),
+
+  body("collectionIds")
+    .notEmpty()
+    .withMessage("Collection IDs are required"),
+
 ];
