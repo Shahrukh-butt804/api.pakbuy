@@ -62,7 +62,7 @@ const addCollection = tryCatch(async (req: any, res: Response): Promise<any> => 
 const updateCollection = tryCatch(async (req: any, res: Response): Promise<any> => {
 
   const { name, description, } = req.body;
-  const files = req.files as Express.Multer.File[];
+  const collectionImage = req.files?.collectionImage ? req.files?.collectionImage[0].path : null;
 
   const collection = await Collection.findById(req.params.id);
 
@@ -72,7 +72,7 @@ const updateCollection = tryCatch(async (req: any, res: Response): Promise<any> 
 
   if (name) collection.name = name;
   if (description) collection.description = description;
-  if (files?.length) collection.image = files[0].path;
+  if (collectionImage) collection.image = collectionImage;
 
   await collection.save();
 

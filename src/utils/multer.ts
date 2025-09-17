@@ -82,7 +82,16 @@ const productUpload = multer({
   fileFilter: createFileFilter(['image/']),
   limits: createLimits(10),
 }).fields([
-  { name: 'images', maxCount: 10 },
+  { name: 'image', maxCount: 1 },
+  { name: 'collectionImage', maxCount: 10 },
+]);
+
+const collectionUpload = multer({
+  storage: createStorage('collection/'),
+  fileFilter: createFileFilter(['image/']),
+  limits: createLimits(10),
+}).fields([
+  { name: 'image', maxCount: 1 },
   { name: 'collectionImage', maxCount: 10 },
 ]);
 
@@ -106,6 +115,7 @@ const profileUpload = multer({
 export default {
   licenseUpload: errorHandler(licenseUpload),
   productUpload: errorHandler(productUpload),
+  collectionUpload: errorHandler(collectionUpload),
   profileUpload: errorHandler(profileUpload),
   updataProductUpload: errorHandler(updataProductUpload),
 };

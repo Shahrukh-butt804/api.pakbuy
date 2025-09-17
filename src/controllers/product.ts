@@ -28,6 +28,16 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
     });
   }
 
+  let parsedCollectionIds;
+
+  try {
+    parsedCollectionIds = Array.isArray(collectionIds)
+      ? collectionIds
+      : JSON.parse(collectionIds);
+  } catch (err) {
+    return res.status(400).json({ message: "Invalid collectionIds format" });
+  }
+
 
   const product = await Product.create({
     name,
@@ -44,13 +54,13 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
     });
   }
 
-  if (!collectionIds || collectionIds.length === 0) {
+  if (!parsedCollectionIds || parsedCollectionIds.length === 0) {
     return res.status(400).json({ message: "Collection IDs are required" });
   }
 
 
   const updateCollection = await Collection.updateMany(
-    { _id: { $in: collectionIds } },
+    { _id: { $in: parsedCollectionIds } },
     { $addToSet: { products: product._id } } // prevents duplicates
   )
 
@@ -71,8 +81,8 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
 
 const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
   const { name, price, description, stock, codes, collectionIds } = req.body;
+  const productImage = req.files?.image ? req.files.image[0].path : null;
 
-  const collectionImage = req.files?.filter((f: any) => f.fieldname === "collectionImage")[0]?.path
 
   const product: any = await Product.findById(req.params.id);
 
@@ -80,16 +90,19 @@ const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => 
     return res.status(404).json({ message: "Product not found" });
   }
 
+  let parsedCollectionIds = Array.isArray(collectionIds) ? collectionIds : JSON.parse(collectionIds);
+
+
   if (name) product.name = name;
   if (price) product.price = price;
   if (description) product.description = description;
   if (stock) product.stock = stock;
-  if (collectionImage) product.image = collectionImage;
-  if (collectionIds && collectionIds.length > 0) {
+  if (productImage) product.image = productImage;
+  if (parsedCollectionIds && parsedCollectionIds.length > 0) {
 
     const updateCollection = await Collection.updateMany(
-      { _id: { $in: collectionIds } },
-      { $addToSet: { products: product._id } } // prevents duplicates
+      { _id: { $in: parsedCollectionIds } },
+      { $addToSet: { products: product._id } }
     )
 
     if (updateCollection.matchedCount === 0) {
