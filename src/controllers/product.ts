@@ -6,7 +6,7 @@ import { tryCatch } from "../utils/tryCatch";
 
 const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
   const { name, price, description, stock, codes, collectionIds } = req.body;
-  const images = req.files?.images
+  const images = req.files?.image
 
   if (!images || images.length == 0) {
     return res.status(400).json({
@@ -90,7 +90,19 @@ const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => 
     return res.status(404).json({ message: "Product not found" });
   }
 
-  let parsedCollectionIds = Array.isArray(collectionIds) ? collectionIds : JSON.parse(collectionIds);
+  let parsedCollectionIds: string[] | null = null;
+
+  if (collectionIds) {
+    if (Array.isArray(collectionIds)) {
+      parsedCollectionIds = collectionIds;
+    } else {
+      try {
+        parsedCollectionIds = JSON.parse(collectionIds);
+      } catch (err) {
+        return res.status(400).json({ message: "Invalid collectionIds format" });
+      }
+    }
+  }
 
 
   if (name) product.name = name;
@@ -98,6 +110,7 @@ const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => 
   if (description) product.description = description;
   if (stock) product.stock = stock;
   if (productImage) product.image = productImage;
+
   if (parsedCollectionIds && parsedCollectionIds.length > 0) {
 
     const updateCollection = await Collection.updateMany(
@@ -105,12 +118,19 @@ const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => 
       { $addToSet: { products: product._id } }
     )
 
+    await Collection.updateMany(
+      { _id: { $nin: parsedCollectionIds } },
+      { $pull: { products: product._id } }
+    );
+
     if (updateCollection.matchedCount === 0) {
       return res.status(404).json({
         message: "No collections found with the given IDs",
       });
     }
 
+  } else {
+    return res.status(400).json({ message: "atleast one Collection ID is required" });
   }
 
   let parsedCodes;
@@ -177,14 +197,25 @@ const getAllProducts = tryCatch(async (req: any, res: Response): Promise<any> =>
 
 const getProductById = tryCatch(async (req: any, res: Response): Promise<any> => {
 
-  const product = await Product.findById(req.params.id);
+  const product: any = await Product.findById(req.params.id);
 
   if (!product) {
     return res.status(404).json({ message: "Product not found" });
   }
+  // also fincd collections containing this product
+  const collections = await Collection.find({ products: product._id });
+
+  product.collections = collections;
+
+  let productWithCollections = {
+    ...product._doc,
+    collections: collections
+  }
+
   return res.status(200).json({
     message: "Product fetched successfully!",
-    product,
+    product: productWithCollections,
+
   });
 
 
