@@ -8,7 +8,7 @@ import { Order } from "../models/order";
 import { Payment } from "../models/payment";
 import { orderConfirmation } from "../utils/nodeMailer";
 import { tryCatch } from "../utils/tryCatch";
-import { Package } from "../models/product";
+import { Collection } from "../models/collection";
 import { Coupon } from "../models/coupon";
 
 
@@ -35,7 +35,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
   let allCodes = [];
 
   for (const item of products) {
-    const pkg = await Package.findById(item.packageId);
+    const pkg = await Collection.findById(item.packageId);
 
     if (!pkg) {
       return res.status(404).json({ message: `Package not found for ID: ${item.packageId}` });

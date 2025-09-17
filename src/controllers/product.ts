@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { Package } from "../models/product";
+import { Collection } from "../models/collection";
 import { tryCatch } from "../utils/tryCatch";
 
 
@@ -57,7 +57,7 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
     }
   })
 
-  const product = await Package.create({
+  const product = await Collection.create({
     name,
     price: 0,
     description,
@@ -70,12 +70,12 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
 
   if (!product) {
     return res.status(501).json({
-      message: "something went wrong while creating Package",
+      message: "something went wrong while creating Collection",
     });
   }
 
   res.status(200).json({
-    message: "Package created successfully!",
+    message: "Collection created successfully!",
     success: true,
     product,
   });
@@ -87,9 +87,9 @@ const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => 
 
   const collectionImage = req.files?.filter((f: any) => f.fieldname === "collectionImage")[0]?.path
 
-  const pkg: any = await Package.findById(req.params.id);
+  const pkg: any = await Collection.findById(req.params.id);
   if (!pkg) {
-    return res.status(404).json({ message: "Package not found" });
+    return res.status(404).json({ message: "Collection not found" });
   }
 
   if (name) pkg.name = name;
@@ -170,8 +170,8 @@ const getAllProducts = tryCatch(async (req: any, res: Response): Promise<any> =>
     : {};
 
   const [packages, totalDocs] = await Promise.all([
-    Package.find(searchQuery).skip(skip).limit(limit).sort({ createdAt: -1 }),
-    Package.countDocuments(searchQuery),
+    Collection.find(searchQuery).skip(skip).limit(limit).sort({ createdAt: -1 }),
+    Collection.countDocuments(searchQuery),
   ]);
 
   return res.status(200).json({
@@ -191,13 +191,13 @@ const getAllProducts = tryCatch(async (req: any, res: Response): Promise<any> =>
 
 const getProductById = tryCatch(async (req: any, res: Response): Promise<any> => {
 
-  const pkg = await Package.findById(req.params.id);
+  const pkg = await Collection.findById(req.params.id);
 
   if (!pkg) {
-    return res.status(404).json({ message: "package not found" });
+    return res.status(404).json({ message: "Collection not found" });
   }
   return res.status(200).json({
-    message: "package fetched successfully!",
+    message: "Collection fetched successfully!",
     pkg,
   });
 
@@ -207,10 +207,10 @@ const getProductById = tryCatch(async (req: any, res: Response): Promise<any> =>
 const deleteProduct = tryCatch(
   async (req: Request, res: Response): Promise<any> => {
 
-    const pkg = await Package.findByIdAndDelete(req.params.id);
+    const pkg = await Collection.findByIdAndDelete(req.params.id);
 
     if (!pkg) {
-      return res.status(404).json({ message: "Package not found" });
+      return res.status(404).json({ message: "Collection not found" });
     }
 
     return res.status(200).json({
