@@ -11,7 +11,6 @@ export interface ICollection {
 }
 
 export async function recalcPrice(doc: HydratedDocument<ICollection>) {
-  console.log("Recalculating CollectionPrice for collection:", doc);
   if (!doc.products || doc.products.length === 0) {
     doc.CollectionPrice = 0;
     return;
