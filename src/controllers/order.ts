@@ -10,6 +10,7 @@ import { orderConfirmation } from "../utils/nodeMailer";
 import { tryCatch } from "../utils/tryCatch";
 import { Collection } from "../models/collection";
 import { Coupon } from "../models/coupon";
+import { Product } from "../models/product";
 
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
@@ -35,23 +36,41 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
   let allCodes = [];
 
   for (const item of products) {
-    const pkg = await Collection.findById(item.packageId);
+    const collection = await Collection.findById(item.collectionId);
 
-    if (!pkg) {
-      return res.status(404).json({ message: `Package not found for ID: ${item.packageId}` });
-    }
-    if (pkg.stock < item.quantity) {
-      return res.status(400).json({ message: `Insufficient stock for  ${pkg.name}` });
+    if (!collection) {
+      return res.status(404).json({ message: `Collection not found for ID: ${item.collectionId}` });
     }
 
-    pkg.stock -= Number(item.quantity);
-    totalAmount += pkg.price * item.quantity;
-    const takenCodes = pkg?.codes?.splice(0, item.quantity) || "N/A";
-    allCodes.push({
-      name: pkg.name,
-      codes: takenCodes
-    });
-    await pkg.save({ validateBeforeSave: false });
+    const allProducts: any = await Product.find(
+      { _id: { $in: collection.products } }
+    )
+
+    if (!allProducts || !allProducts.length) {
+      return res.status(404).json({ message: `No products found in this collection` });
+    }
+
+    for (const product of allProducts) {
+
+      if (product.stock < item.quantity) {
+        return res.status(400).json({ message: `Insufficient stock for  ${product.name} in ${collection.name}` });
+      }
+
+      product.stock -= Number(item.quantity);
+      totalAmount += product.price * item.quantity;
+
+      if (product?.codes && product?.codes?.length > 0) {
+        const takenCodes = product?.codes?.splice(0, item.quantity) ?? [];
+        allCodes.push({
+          name: product.name,
+          codes: takenCodes
+        });
+      }
+
+      await product.save({ validateBeforeSave: false });
+    }
+
+
   }
 
   // twenty percent tax
@@ -216,7 +235,7 @@ const getAllOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
 const getOrderById = tryCatch(async (req: any, res: Response): Promise<any> => {
 
   const order = await Order.findById(req.params.id).populate("user").populate({
-    path: "products.packageId",
+    path: "products.collectionId",
   });;
 
   if (!order) {
@@ -232,10 +251,10 @@ const getOrderById = tryCatch(async (req: any, res: Response): Promise<any> => {
 
 const getOrderByUser = tryCatch(async (req: any, res: Response): Promise<any> => {
 
-  const orders = await Order.find({ user: req.user._id }).populate("products.packageId");
+  const orders = await Order.find({ user: req.user._id }).populate("products.collectionId").sort({ createdAt: -1 });
 
-  if (!orders) {
-    return res.status(404).json({ message: "orders not found" });
+  if (!orders || !orders.length) {
+    return res.status(404).json({ message: "No orders found" });
   }
 
   return res.status(200).json({

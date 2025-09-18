@@ -45,7 +45,7 @@ export const validateOrder = [
 
   // Products
   body('products').isArray({ min: 1 }).withMessage('At least one product is required'),
-  body('products.*.packageId').notEmpty().withMessage('Product ID is required'),
+  body('products.*.collectionId').notEmpty().withMessage('Collection ID is required'),
   body('products.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
 
   // Optional Fields

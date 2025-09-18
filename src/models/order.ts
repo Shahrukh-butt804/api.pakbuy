@@ -95,9 +95,9 @@ const orderSchema = new mongoose.Schema({
   },
   products: [
     {
-      packageId: {
+      collectionId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Package",
+        ref: "Collection",
         required: true,
       },
       quantity: {
