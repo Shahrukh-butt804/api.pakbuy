@@ -6,6 +6,9 @@ export const validateCollection = [
     .trim()
     .notEmpty()
     .withMessage("Collection name is required"),
+  body("title")
+    .notEmpty()
+    .withMessage("Title is required"),
   body("description")
     .notEmpty()
     .withMessage("Description is required"),

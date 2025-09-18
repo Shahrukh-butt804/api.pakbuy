@@ -5,7 +5,7 @@ import { tryCatch } from "../utils/tryCatch";
 
 const addCollection = tryCatch(async (req: any, res: Response): Promise<any> => {
   const {
-    name, description, slogan
+    name, description, slogan, title
   } = req.body;
 
 
@@ -28,6 +28,7 @@ const addCollection = tryCatch(async (req: any, res: Response): Promise<any> => 
 
   const collection = await Collection.create({
     name,
+    title,
     price: 0,
     description: parseDescription,
     slogan,
@@ -50,7 +51,7 @@ const addCollection = tryCatch(async (req: any, res: Response): Promise<any> => 
 
 const updateCollection = tryCatch(async (req: any, res: Response): Promise<any> => {
 
-  const { name, description, slogan } = req.body;
+  const { name, title, description, slogan } = req.body;
   const collectionImage = req.files?.collectionImage ? req.files?.collectionImage[0].path : null;
 
   const collection = await Collection.findById(req.params.id);
@@ -78,6 +79,7 @@ const updateCollection = tryCatch(async (req: any, res: Response): Promise<any> 
   if (name) collection.name = name;
   if (slogan) collection.slogan = slogan;
   if (collectionImage) collection.image = collectionImage;
+  if (title) collection.title = title;
 
   await collection.save();
 
@@ -106,7 +108,7 @@ const getAllCollection = tryCatch(async (req: any, res: Response): Promise<any> 
     : {};
 
   const [collections, totalDocs] = await Promise.all([
-    Collection.find(searchQuery).skip(skip).limit(limit).sort({ createdAt: -1 }),
+    Collection.find(searchQuery).skip(skip).limit(limit).populate("products").sort({ createdAt: -1 }),
     Collection.countDocuments(searchQuery),
   ]);
 

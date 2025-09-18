@@ -17,6 +17,10 @@ const collectionSchema = new mongoose.Schema({
     unique: true,
     required: true
   },
+  title: {
+    type: String,
+    required: true
+  },
   description: [
     {
       heading: { type: String, required: true },
