@@ -4,12 +4,12 @@ import { recalcPrice } from "../utils/recalculateProductPrice";
 
 export interface ICollection {
   name: string;
-  description: string;
+  description: { heading: string; text: string }[];
   CollectionPrice: number;
   image: string;
+  slogan: string;
   products: mongoose.Types.ObjectId[];
 }
-
 
 const collectionSchema = new mongoose.Schema({
   name: {
@@ -17,7 +17,14 @@ const collectionSchema = new mongoose.Schema({
     unique: true,
     required: true
   },
-  description: {
+  description: [
+    {
+      heading: { type: String, required: true },
+      text: { type: String, required: true },
+      _id: false
+    }
+  ],
+  slogan: {
     type: String,
     required: true
   },

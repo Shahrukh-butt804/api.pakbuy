@@ -6,10 +6,11 @@ export const validateCollection = [
     .trim()
     .notEmpty()
     .withMessage("Collection name is required"),
-
   body("description")
-    .trim()
     .notEmpty()
     .withMessage("Description is required"),
+  body("slogan")
+    .notEmpty()
+    .withMessage("Slogan is required"),
 
 ];

@@ -5,7 +5,7 @@ import { tryCatch } from "../utils/tryCatch";
 
 const addCollection = tryCatch(async (req: any, res: Response): Promise<any> => {
   const {
-    name, description,
+    name, description, slogan
   } = req.body;
 
 
@@ -17,10 +17,20 @@ const addCollection = tryCatch(async (req: any, res: Response): Promise<any> => 
     });
   }
 
+
+  const parseDescription = typeof description === "string" ? JSON.parse(description) : description;
+
+  if (parseDescription && !Array.isArray(parseDescription)) {
+    return res.status(400).json({
+      message: "Description must be an array of objects with heading and text",
+    });
+  }
+
   const collection = await Collection.create({
     name,
     price: 0,
-    description,
+    description: parseDescription,
+    slogan,
     image: collectionImage,
   })
 
@@ -40,7 +50,7 @@ const addCollection = tryCatch(async (req: any, res: Response): Promise<any> => 
 
 const updateCollection = tryCatch(async (req: any, res: Response): Promise<any> => {
 
-  const { name, description, } = req.body;
+  const { name, description, slogan } = req.body;
   const collectionImage = req.files?.collectionImage ? req.files?.collectionImage[0].path : null;
 
   const collection = await Collection.findById(req.params.id);
@@ -49,8 +59,24 @@ const updateCollection = tryCatch(async (req: any, res: Response): Promise<any> 
     return res.status(404).json({ message: "Collection not found" });
   }
 
+  let parsedDescription: any = undefined;
+
+  if (description !== undefined) {
+    parsedDescription =
+      typeof description === "string" ? JSON.parse(description) : description;
+
+    if (parsedDescription && !Array.isArray(parsedDescription)) {
+      return res.status(400).json({
+        message: "Description must be an array of objects with heading and text",
+      });
+    }
+
+    collection.description = parsedDescription;
+  }
+
+
   if (name) collection.name = name;
-  if (description) collection.description = description;
+  if (slogan) collection.slogan = slogan;
   if (collectionImage) collection.image = collectionImage;
 
   await collection.save();

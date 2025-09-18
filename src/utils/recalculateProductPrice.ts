@@ -4,9 +4,10 @@ import { HydratedDocument } from "mongoose";
 
 export interface ICollection {
   name: string;
-  description: string;
+  description: { heading: string; text: string }[];
   CollectionPrice: number;
   image: string;
+  slogan?: string;
   products: mongoose.Types.ObjectId[];
 }
 
