@@ -25,8 +25,7 @@ export const validateProduct = [
     .withMessage("Stock must be a non-negative integer"),
 
   body("codes")
-    .notEmpty()
-    .withMessage("Codes are required"),
+    .optional(),
 
   body("collectionIds")
     .notEmpty()

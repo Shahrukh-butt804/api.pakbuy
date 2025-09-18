@@ -15,15 +15,9 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
     });
   }
 
-  let parsedCodes = JSON.parse(codes)
+  let parsedCodes = codes ? JSON.parse(codes) : [];
 
-  if (!parsedCodes || parsedCodes.length == 0) {
-    return res.status(400).json({
-      message: "codes is required",
-    });
-  }
-
-  if (parsedCodes.length < Number(stock)) {
+  if (parsedCodes.length > 0 && parsedCodes.length < Number(stock)) {
     return res.status(400).json({
       message: `Enter ${Number(stock) - parsedCodes.length} more Codes`,
     });
@@ -138,12 +132,8 @@ const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => 
   let parsedCodes;
 
   if (codes) {
-    parsedCodes = JSON.parse(codes);
-    if (!Array.isArray(parsedCodes) || parsedCodes.length === 0) {
-      return res.status(400).json({ message: "At least one code is required" });
-    }
-
-    if (parsedCodes.length < Number(stock)) {
+    parsedCodes = JSON.parse(codes) || [];
+    if (parsedCodes.length > 0 && parsedCodes.length < Number(stock)) {
       return res.status(400).json({
         message: `Enter ${Number(stock) - parsedCodes.length} more Codes`,
       });
