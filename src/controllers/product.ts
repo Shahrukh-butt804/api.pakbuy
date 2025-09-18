@@ -105,12 +105,13 @@ const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => 
     }
   }
 
+  const oldPrice = product.price;
 
   if (name) product.name = name;
-  if (price) product.price = price;
   if (description) product.description = description;
   if (stock) product.stock = stock;
   if (productImage) product.image = productImage;
+  if (price) product.price = price;
 
   if (parsedCollectionIds && parsedCollectionIds.length > 0) {
 
@@ -153,11 +154,21 @@ const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => 
 
   await product.save();
 
+
+  if (price && oldPrice !== price) {
+    const collections = await Collection.find({ products: product._id });
+    for (const col of collections) {
+      await recalcPrice(col);
+      await col.save();
+    }
+  }
+
   return res.status(200).json({
     message: "Product updated successfully!",
     success: true,
     product,
   });
+
 });
 
 const getAllProducts = tryCatch(async (req: any, res: Response): Promise<any> => {

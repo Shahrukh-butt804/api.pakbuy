@@ -17,28 +17,6 @@ const addCollection = tryCatch(async (req: any, res: Response): Promise<any> => 
     });
   }
 
-  // const product = await Product.findById(productsId)
-
-  // if (!product) {
-  //   return res.status(400).json({
-  //     message: "product is required",
-  //   });
-  // }
-
-  // let parsedCodes = JSON.parse(codes)
-
-  // if (!parsedCodes || parsedCodes.length == 0) {
-  //   return res.status(400).json({
-  //     message: "codes is required",
-  //   });
-  // }
-
-  // if (parsedCodes.length < Number(stock)) {
-  //   return res.status(400).json({
-  //     message: `Enter ${Number(stock) - parsedCodes.length} more Codes`,
-  //   });
-  // }
-
   const collection = await Collection.create({
     name,
     price: 0,
@@ -57,6 +35,7 @@ const addCollection = tryCatch(async (req: any, res: Response): Promise<any> => 
     success: true,
     collection,
   });
+
 });
 
 const updateCollection = tryCatch(async (req: any, res: Response): Promise<any> => {
@@ -122,7 +101,7 @@ const getAllCollection = tryCatch(async (req: any, res: Response): Promise<any> 
 
 const getCollectionById = tryCatch(async (req: any, res: Response): Promise<any> => {
 
-  const collection = await Collection.findById(req.params.id);
+  const collection = await Collection.findById(req.params.id).populate("products");
 
   if (!collection) {
     return res.status(404).json({ message: "Collection not found" });

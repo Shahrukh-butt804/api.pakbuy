@@ -18,11 +18,9 @@ export async function recalcPrice(doc: HydratedDocument<ICollection>) {
 
 
   // fetch all product prices
-  const products = await mongoose.model("Product").find(
-    { _id: { $in: doc.products } },
-    "price"
-  );
+  const products = await mongoose.model("Product").find({ _id: { $in: doc.products } }, "price");
 
   const total = products.reduce((sum, p) => sum + (p.price || 0), 0);
   doc.CollectionPrice = total;
+
 }
