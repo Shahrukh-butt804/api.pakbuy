@@ -24,6 +24,7 @@ const corsOptions = {
   credentials: true,
   allowedHeaders: headers,
   exposedHeaders: headers,
+
 };
 
 export default corsOptions;
