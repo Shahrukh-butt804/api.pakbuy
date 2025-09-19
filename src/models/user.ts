@@ -67,7 +67,7 @@ userSchema.methods.isPasswordCorrect = async function (
 // GENERATE ACCESS TOKEN
 userSchema.methods.generateAccessToken = function () {
   try {
-    const expiresIn: any = "5m";
+    const expiresIn: any = process.env.ACCESS_TOKEN_EXPIRY || "365d";
 
     return jwt.sign(
       {
@@ -87,7 +87,7 @@ userSchema.methods.generateAccessToken = function () {
 // GENERATE REFRESH TOKEN
 userSchema.methods.generateRefreshToken = function () {
   try {
-    const expiresIn: any = "5m";
+    const expiresIn: any = process.env.REFRESH_TOKEN_EXPIRY || "365d";
     return jwt.sign(
       {
         _id: this._id,
