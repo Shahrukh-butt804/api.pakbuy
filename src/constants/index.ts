@@ -7,7 +7,7 @@
 
 
 export const cookieOptions: any = {
-  httpOnly: false,
+  httpOnly: ["customdev", "live"].includes(process.env.NODE_ENV as string),
   secure: ["customdev", "live"].includes(process.env.NODE_ENV as string),
   sameSite: ["customdev", "live"].includes(process.env.NODE_ENV as string) ? "none" : "lax",
 };
