@@ -1,12 +1,13 @@
 import { Router } from "express";
 
 import { getAllUsers, getReport, getUserById, toggleUserStatus } from "../controllers/userManagement";
+import { isAdmin } from "../middlewares/isAdmin..middleware";
 
 const userManagementRouter = Router();
 
-userManagementRouter.route("/get-report").get(getReport);
-userManagementRouter.route("/get-all-users").get(getAllUsers);
-userManagementRouter.route("/get-user-by-id/:id").get(getUserById);
-userManagementRouter.route("/toggle-user-status/:id").put(toggleUserStatus);
+userManagementRouter.route("/get-report").get(isAdmin, getReport);
+userManagementRouter.route("/get-all-users").get(isAdmin, getAllUsers);
+userManagementRouter.route("/get-user-by-id/:id").get(isAdmin, getUserById);
+userManagementRouter.route("/toggle-user-status/:id").put(isAdmin, toggleUserStatus);
 
 export default userManagementRouter;

@@ -40,11 +40,10 @@ export const isActive = tryCatch(
         });
       }
 
-      if (user.isActive === false) {
+      if (!user.isActive) {
         return res.status(401).json({ message: "User is blocked", success: false });
       }
 
-      req.user = user; // Now TypeScript recognizes this
       next();
     } catch (error: any) {
       console.error(error);

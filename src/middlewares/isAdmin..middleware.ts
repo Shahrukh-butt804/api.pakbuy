@@ -3,7 +3,7 @@ import { Response, NextFunction } from "express";
 import { User } from "../models/user";
 import { tryCatch } from "../utils/tryCatch";
 
-export const isLoggedIn = tryCatch(
+export const isAdmin = tryCatch(
   async (req: any, res: Response, next: NextFunction): Promise<any> => {
     try {
       const token: string | undefined =
@@ -32,16 +32,26 @@ export const isLoggedIn = tryCatch(
       );
 
       if (!user) {
-        req.user = false;
-        return next();
+        return res.status(401).json({
+          success: false,
+          message: "Invalid Access Token",
+        });
       }
 
-      req.user = user;
+      if (user.role !== "admin") {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied. Admins only.",
+        });
+      }
+
       next();
     } catch (error: any) {
       console.error(error);
-      req.user = false;
-      return next()
+      return res.status(401).json({
+        success: false,
+        message: "Invalid Access Token",
+      });
     }
   },
-);
+);  
