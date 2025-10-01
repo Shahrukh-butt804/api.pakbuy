@@ -117,7 +117,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     shippingAddress: shippingAddress ? shippingAddress : billingAddress,
     stripeSource: token,
     orderNote,
-    totalAmount,
+    totalAmount: Number(totalAmount.toFixed(2)),
     products,
 
   });
