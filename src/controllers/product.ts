@@ -6,7 +6,7 @@ import { recalcPrice } from "../utils/recalculateProductPrice";
 
 
 const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
-  const { name, price, description, stock, codes, collectionIds } = req.body;
+  const { name, price, description, stock, codes, collectionIds, review, rating } = req.body;
   const images = req.files?.image
 
   if (!images || images.length == 0) {
@@ -40,7 +40,9 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
     description,
     stock,
     image: images[0].path,
-    codes: parsedCodes
+    codes: parsedCodes,
+    review,
+    rating
   });
 
   if (!product) {
@@ -75,7 +77,7 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
 });
 
 const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
-  const { name, price, description, stock, codes, collectionIds } = req.body;
+  const { name, price, description, stock, codes, collectionIds, review, rating } = req.body;
   const productImage = req.files?.image ? req.files.image[0].path : null;
 
 
@@ -106,6 +108,8 @@ const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => 
   if (stock) product.stock = stock;
   if (productImage) product.image = productImage;
   if (price) product.price = price;
+  if (review) product.review = review;
+  if (rating) product.rating = rating;
 
   if (parsedCollectionIds && parsedCollectionIds.length > 0) {
 

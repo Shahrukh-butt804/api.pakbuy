@@ -22,6 +22,14 @@ const productSchema = new mongoose.Schema({
     required: true
   },
   codes: [String],
+  rating: {
+    type: Number,
+    default: 0
+  },
+  review: {
+    type: Number,
+    default: 0
+  },
 
 });
 

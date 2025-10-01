@@ -156,7 +156,8 @@ const getMembershipGrowth = tryCatch(async (req: any, res: Response): Promise<an
 
   res.status(200).json({
     message: "Membership growth fetched successfully!",
-    growth
+    growth,
+    weeksBack
   });
 });
 

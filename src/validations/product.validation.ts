@@ -27,6 +27,18 @@ export const validateProduct = [
   body("codes")
     .optional(),
 
+  body("rating")
+    .notEmpty()
+    .withMessage("Rating is required")
+    .isFloat({ min: 0, max: 5 })
+    .withMessage("Rating must be a number between 0 and 5"),
+
+  body("review")
+    .notEmpty()
+    .withMessage("Review count is required")
+    .isInt({ min: 0 })
+    .withMessage("Review count must be a non-negative integer"),
+
   body("collectionIds")
     .notEmpty()
     .withMessage("Collection IDs are required"),
