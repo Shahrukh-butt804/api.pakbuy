@@ -118,6 +118,48 @@ const getAllUsers = tryCatch(async (req: any, res: Response): Promise<any> => {
 
 });
 
+const getMembershipGrowth = tryCatch(async (req: any, res: Response): Promise<any> => {
+  const weeksBack = Number(req.query.weeksBack) || 1;
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - weeksBack * 7);
+
+  const growth = await User.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: startDate }
+      }
+    },
+    {
+      $group: {
+        _id: {
+          year: { $year: "$createdAt" },
+          week: { $isoWeek: "$createdAt" }
+        },
+        members: { $sum: 1 }
+      }
+    },
+    {
+      $sort: {
+        "_id.year": 1,
+        "_id.week": 1
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        year: "$_id.year",
+        week: "$_id.week",
+        members: 1
+      }
+    }
+  ]);
+
+  res.status(200).json({
+    message: "Membership growth fetched successfully!",
+    growth
+  });
+});
+
 const getUserById = tryCatch(async (req: Request, res: Response): Promise<any> => {
 
   const user = await User.findById(req.params.id);
@@ -141,4 +183,4 @@ const toggleUserStatus = tryCatch(async (req: Request, res: Response): Promise<a
 
 
 
-export { getReport, getAllUsers, getUserById, toggleUserStatus };
+export { getReport, getAllUsers, getUserById, toggleUserStatus, getMembershipGrowth };
