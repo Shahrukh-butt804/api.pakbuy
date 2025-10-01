@@ -108,6 +108,8 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     await coupon.save();
   }
 
+  totalAmount = Number(totalAmount.toFixed(2));
+
 
   const order = await Order.create({
     user: req.user._id ? req.user._id : null,
