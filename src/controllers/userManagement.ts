@@ -119,7 +119,7 @@ const getAllUsers = tryCatch(async (req: any, res: Response): Promise<any> => {
 });
 
 const getMembershipGrowth = tryCatch(async (req: any, res: Response): Promise<any> => {
-  const weeksBack = Number(req.query.weeksBack) || 1;
+  const weeksBack = Number(req.query.weeksBack) || 12;
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - weeksBack * 7);
 
