@@ -108,8 +108,6 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     await coupon.save();
   }
 
-  totalAmount = Number(totalAmount.toFixed(2));
-
 
   const order = await Order.create({
     user: req.user._id ? req.user._id : null,
@@ -117,7 +115,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     shippingAddress: shippingAddress ? shippingAddress : billingAddress,
     stripeSource: token,
     orderNote,
-    totalAmount: Number(totalAmount.toFixed(2)),
+    totalAmount,
     products,
 
   });
@@ -148,7 +146,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
 
   const payment = await Payment.create({
     orderId: order._id,
-    amount: Number(totalAmount.toFixed(2)),
+    amount: totalAmount,
     paymentMethod: "Stripe",
     metaData: charge
   });
