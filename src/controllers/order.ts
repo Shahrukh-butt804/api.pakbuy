@@ -148,7 +148,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
 
   const payment = await Payment.create({
     orderId: order._id,
-    amount: totalAmount,
+    amount: Number(totalAmount.toFixed(2)),
     paymentMethod: "Stripe",
     metaData: charge
   });
