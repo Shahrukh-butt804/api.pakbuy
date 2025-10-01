@@ -16,7 +16,7 @@ const router = express.Router();
 
 router.use("/auth", authRouter);
 router.use("/profile", isActive, profileRouter);
-router.use("/collections", isActive, collectionRouter);
+router.use("/collections", collectionRouter);
 router.use("/products", isActive, productRouter);
 router.use("/contact-us", isActive, contactRouter);
 router.use("/resource", isActive, resourcesRouter);
