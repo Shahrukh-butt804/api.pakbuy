@@ -17,15 +17,15 @@ const router = express.Router();
 router.use("/auth", authRouter);
 router.use("/profile", isActive, profileRouter);
 router.use("/collections", collectionRouter);
-router.use("/products", isActive, productRouter);
-router.use("/contact-us", isActive, contactRouter);
+router.use("/products", productRouter);
+router.use("/contact-us", contactRouter);
 router.use("/resource", resourcesRouter);
 router.use("/coupons", isActive, couponsRouter);
 
 
-router.use("/order", isActive, orderRouter);
+router.use("/order", orderRouter);
 router.use("/cart", isActive, cartRouter);
-router.use("/news-letter", isActive, newsLetter);
+router.use("/news-letter", newsLetter);
 
 
 // admin routes
