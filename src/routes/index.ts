@@ -19,7 +19,7 @@ router.use("/profile", isActive, profileRouter);
 router.use("/collections", collectionRouter);
 router.use("/products", isActive, productRouter);
 router.use("/contact-us", isActive, contactRouter);
-router.use("/resource", isActive, resourcesRouter);
+router.use("/resource", resourcesRouter);
 router.use("/coupons", isActive, couponsRouter);
 
 
