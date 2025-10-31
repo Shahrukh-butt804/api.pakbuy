@@ -5,7 +5,7 @@ import { tryCatch } from "../utils/tryCatch";
 
 const addCollection = tryCatch(async (req: any, res: Response): Promise<any> => {
   const {
-    name, description, slogan, title
+    name, description, slogan, title, about
   } = req.body;
 
 
@@ -32,6 +32,7 @@ const addCollection = tryCatch(async (req: any, res: Response): Promise<any> => 
     price: 0,
     description: parseDescription,
     slogan,
+    about,
     image: collectionImage,
   })
 
@@ -51,7 +52,7 @@ const addCollection = tryCatch(async (req: any, res: Response): Promise<any> => 
 
 const updateCollection = tryCatch(async (req: any, res: Response): Promise<any> => {
 
-  const { name, title, description, slogan } = req.body;
+  const { name, title, description, slogan, about } = req.body;
   const collectionImage = req.files?.collectionImage ? req.files?.collectionImage[0].path : null;
 
   const collection = await Collection.findById(req.params.id);
@@ -80,6 +81,7 @@ const updateCollection = tryCatch(async (req: any, res: Response): Promise<any> 
   if (slogan) collection.slogan = slogan;
   if (collectionImage) collection.image = collectionImage;
   if (title) collection.title = title;
+  if (about) collection.about = about;
 
   await collection.save();
 

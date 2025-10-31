@@ -32,6 +32,10 @@ const collectionSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  about: {
+    type: String,
+    required: true
+  },
   CollectionPrice: {
     type: Number,
     default: 0

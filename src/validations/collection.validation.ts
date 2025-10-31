@@ -15,5 +15,8 @@ export const validateCollection = [
   body("slogan")
     .notEmpty()
     .withMessage("Slogan is required"),
+  body("about")
+    .notEmpty()
+    .withMessage("About is required"),
 
 ];
