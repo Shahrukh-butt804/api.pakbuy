@@ -22,6 +22,180 @@ const getStripeKeys = tryCatch(async (req: any, res: Response): Promise<any> => 
   });
 });
 
+// const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
+//   const {
+//     billingAddress,
+//     shippingAddress,
+//     token,
+//     orderNote,
+//     products,
+//     couponId
+//   } = req.body;
+
+//   let totalAmount = 0;
+//   let allCodes = [];
+
+//   for (const item of products) {
+//     const collection = await Collection.findById(item.collectionId);
+
+//     if (!collection) {
+//       return res.status(404).json({ message: `Collection not found for ID: ${item.collectionId}` });
+//     }
+
+//     const allProducts: any = await Product.find(
+//       { _id: { $in: collection.products } }
+//     )
+
+//     if (!allProducts || !allProducts.length) {
+//       return res.status(404).json({ message: `No products found in this collection` });
+//     }
+
+//     for (const product of allProducts) {
+
+//       if (product.stock < item.quantity) {
+//         return res.status(400).json({ message: `Insufficient stock for  ${product.name} in ${collection.name}` });
+//       }
+
+//       product.stock -= Number(item.quantity);
+//       totalAmount += product.price * item.quantity;
+
+//       if (product?.codes && product?.codes?.length > 0) {
+//         const takenCodes = product?.codes?.splice(0, item.quantity) ?? [];
+//         allCodes.push({
+//           name: product.name,
+//           codes: takenCodes
+//         });
+//       }
+
+//       await product.save({ validateBeforeSave: false });
+//     }
+
+
+//   }
+
+//   // twenty percent tax
+//   totalAmount += totalAmount * 0.2;
+
+//   if (couponId) {
+//     const coupon = await Coupon.findById(couponId);
+
+//     if (!coupon) {
+//       return res.status(404).json({ message: "Invalid Coupon Id" });
+//     }
+//     if (!coupon.isActive) {
+//       return res.status(400).json({ message: "Coupon is not active" });
+//     }
+//     if (coupon.limit <= 0) {
+//       return res.status(400).json({ message: "Coupon limit exceeded" });
+//     }
+//     if (new Date(coupon.expiryDate) < new Date()) {
+//       return res.status(400).json({ message: "Coupon is expired" });
+//     }
+//     const couponUsedByUser = coupon.usedBy.filter((id: any) => id.equals(req.user._id)).length;
+
+//     if (couponUsedByUser >= coupon.perUserLimit) {
+//       return res.status(400).json({ message: "Coupon limit per user exceeded" });
+//     }
+
+//     totalAmount = Math.max(
+//       0,
+//       coupon.type === "amount"
+//         ? totalAmount - coupon.value
+//         : totalAmount - (totalAmount * coupon.value) / 100
+//     );
+//     coupon.limit -= 1;
+//     coupon.usedBy.push(req.user._id);
+//     await coupon.save();
+//   }
+
+
+//   const order = await Order.create({
+//     user: req.user._id ? req.user._id : null,
+//     billingAddress,
+//     shippingAddress: shippingAddress ? shippingAddress : billingAddress,
+//     stripeSource: token,
+//     orderNote,
+//     totalAmount,
+//     products,
+
+//   });
+
+//   if (!order) {
+//     return res.status(500).json({ message: "Failed to create order" });
+//   }
+
+
+//   // make payment
+//   const customer = await stripe.customers.create({
+//     email: billingAddress.email,
+//     source: token,
+//   });
+
+//   // Create the charge
+//   const charge = await stripe.charges.create({
+//     amount: totalAmount * 100,
+//     currency: 'usd',
+//     description: orderNote || "",
+//     customer: customer.id
+//   });
+
+
+//   if (charge.status !== "succeeded") {
+//     return res.status(400).json({ message: "payment Failed From Stripe" });
+//   }
+
+//   const payment = await Payment.create({
+//     orderId: order._id,
+//     amount: totalAmount,
+//     paymentMethod: "Stripe",
+//     metaData: charge
+//   });
+
+//   if (!payment) {
+//     return res.status(500).json({ message: "Failed to create payment" });
+//   }
+
+//   const updatedOrder = await Order.findByIdAndUpdate(
+//     order._id,
+//     {
+//       $set: {
+//         status: "confirmed",
+//       },
+//     },
+//     {
+//       new: true,
+//     },
+//   )
+
+
+//   if (!updatedOrder) {
+//     return res.status(500).json({ message: "Failed to update order" });
+//   }
+
+//   const result = await orderConfirmation(
+//     order?.billingAddress?.email,
+//     "Order Confirmation - Choose Well",
+//     {
+//       customerName: order?.billingAddress?.firstName + " " + order?.billingAddress?.lastName,
+//       orderId: order?._id.toString(),
+//       totalAmount: totalAmount,
+//       orderDate: new Date().toLocaleDateString(),
+//       packageData: allCodes,
+//       trackingLink: `/track-order/${order._id}`,
+//     }
+//   );
+
+//   if (!result) {
+//     return res.status(500).json({ message: "Failed to send email" });
+//   }
+
+//   return res.status(200).json({
+//     message: "Order created successfully!",
+//     success: true,
+//     order: updatedOrder,
+//   });
+// });
+
 const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
   const {
     billingAddress,
@@ -32,121 +206,144 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     couponId
   } = req.body;
 
-  let totalAmount = 0;
-  let allCodes = [];
+  let baseAmount = 0;
+  let allCodes: any[] = [];
+
+  // ✅ Calculate items & deduct stock
+  const lineItems: any[] = [];
 
   for (const item of products) {
     const collection = await Collection.findById(item.collectionId);
-
     if (!collection) {
       return res.status(404).json({ message: `Collection not found for ID: ${item.collectionId}` });
     }
 
-    const allProducts: any = await Product.find(
-      { _id: { $in: collection.products } }
-    )
+    const allProducts: any = await Product.find({
+      _id: { $in: collection.products }
+    });
 
     if (!allProducts || !allProducts.length) {
       return res.status(404).json({ message: `No products found in this collection` });
     }
 
     for (const product of allProducts) {
-
       if (product.stock < item.quantity) {
-        return res.status(400).json({ message: `Insufficient stock for  ${product.name} in ${collection.name}` });
+        return res.status(400).json({ message: `Insufficient stock for ${product.name} in ${collection.name}` });
       }
 
       product.stock -= Number(item.quantity);
-      totalAmount += product.price * item.quantity;
+      baseAmount += product.price * item.quantity;
 
-      if (product?.codes && product?.codes?.length > 0) {
-        const takenCodes = product?.codes?.splice(0, item.quantity) ?? [];
+      if (product.codes?.length > 0) {
+        const takenCodes = product.codes.splice(0, item.quantity);
         allCodes.push({
           name: product.name,
           codes: takenCodes
         });
       }
 
+      // ✅ Prepare Stripe line item for tax calculation
+      lineItems.push({
+        reference: product._id.toString(),
+        amount: Math.round(product.price * 100), // single item price in cents
+        quantity: item.quantity,
+        tax_behavior: "exclusive",
+        tax_code: "txcd_99999999" // replace with proper code per product if needed
+      });
+
       await product.save({ validateBeforeSave: false });
     }
-
-
   }
 
-  // twenty percent tax
-  totalAmount += totalAmount * 0.2;
-
+  // ✅ APPLY COUPON BEFORE TAX
+  let discountAmount = 0;
   if (couponId) {
     const coupon = await Coupon.findById(couponId);
+    if (!coupon) return res.status(404).json({ message: "Invalid Coupon Id" });
+    if (!coupon.isActive) return res.status(400).json({ message: "Coupon is not active" });
+    if (coupon.limit <= 0) return res.status(400).json({ message: "Coupon limit exceeded" });
+    if (new Date(coupon.expiryDate) < new Date()) return res.status(400).json({ message: "Coupon is expired" });
 
-    if (!coupon) {
-      return res.status(404).json({ message: "Invalid Coupon Id" });
-    }
-    if (!coupon.isActive) {
-      return res.status(400).json({ message: "Coupon is not active" });
-    }
-    if (coupon.limit <= 0) {
-      return res.status(400).json({ message: "Coupon limit exceeded" });
-    }
-    if (new Date(coupon.expiryDate) < new Date()) {
-      return res.status(400).json({ message: "Coupon is expired" });
-    }
-    const couponUsedByUser = coupon.usedBy.filter((id: any) => id.equals(req.user._id)).length;
-
-    if (couponUsedByUser >= coupon.perUserLimit) {
+    const usedCount = coupon.usedBy.filter((id: any) => id.equals(req.user._id)).length;
+    if (usedCount >= coupon.perUserLimit) {
       return res.status(400).json({ message: "Coupon limit per user exceeded" });
     }
 
-    totalAmount = Math.max(
-      0,
+    discountAmount =
       coupon.type === "amount"
-        ? totalAmount - coupon.value
-        : totalAmount - (totalAmount * coupon.value) / 100
-    );
+        ? coupon.value
+        : (baseAmount * coupon.value) / 100;
+
     coupon.limit -= 1;
     coupon.usedBy.push(req.user._id);
     await coupon.save();
   }
 
+  let amountAfterDiscount = Math.max(0, baseAmount - discountAmount);
 
-  const order = await Order.create({
-    user: req.user._id ? req.user._id : null,
-    billingAddress,
-    shippingAddress: shippingAddress ? shippingAddress : billingAddress,
-    stripeSource: token,
-    orderNote,
-    totalAmount,
-    products,
-
+  // ✅ Adjust line items for discount proportionally
+  const discountRatio = amountAfterDiscount / baseAmount || 0;
+  lineItems.forEach(item => {
+    item.amount = Math.round(item.amount * discountRatio);
   });
 
-  if (!order) {
-    return res.status(500).json({ message: "Failed to create order" });
-  }
+  // ✅ STRIPE TAX CALCULATION
+  const taxCalculation: any = await stripe.tax.calculations.create({
+    currency: "usd",
+    customer_details: {
+      address: {
+        line1: billingAddress.address,
+        city: billingAddress.city,
+        state: billingAddress.state,
+        postal_code: billingAddress.zipCode,
+        country: billingAddress.country,
+      },
+      address_source: "shipping",
+    },
+    line_items: lineItems
+  });
 
+  const taxAmount = (taxCalculation.tax_breakdown[0]?.amount || 0) / 100;
+  const finalTotal = (taxCalculation.amount_total || amountAfterDiscount * 100) / 100;
 
-  // make payment
+  // ✅ CREATE ORDER IN DB
+  const order = await Order.create({
+    user: req.user?._id || null,
+    billingAddress,
+    shippingAddress: shippingAddress || billingAddress,
+    stripeSource: token,
+    orderNote: orderNote || "",
+    products,
+    subTotal: baseAmount,
+    discountAmount,
+    taxAmount,
+    totalAmount: finalTotal,
+  });
+
+  if (!order) return res.status(500).json({ message: "Failed to create order" });
+
+  // ✅ Stripe Customer
   const customer = await stripe.customers.create({
     email: billingAddress.email,
     source: token,
   });
 
-  // Create the charge
+  // ✅ Charge customer (with tax)
   const charge = await stripe.charges.create({
-    amount: totalAmount * 100,
-    currency: 'usd',
+    amount: Math.round(finalTotal * 100),
+    currency: "usd",
     description: orderNote || "",
     customer: customer.id
   });
 
-
   if (charge.status !== "succeeded") {
-    return res.status(400).json({ message: "payment Failed From Stripe" });
+    return res.status(400).json({ message: "Payment Failed From Stripe" });
   }
 
+  // ✅ Save Payment
   const payment = await Payment.create({
     orderId: order._id,
-    amount: totalAmount,
+    amount: finalTotal,
     paymentMethod: "Stripe",
     metaData: charge
   });
@@ -155,39 +352,26 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     return res.status(500).json({ message: "Failed to create payment" });
   }
 
+  // ✅ Confirm order
   const updatedOrder = await Order.findByIdAndUpdate(
     order._id,
-    {
-      $set: {
-        status: "confirmed",
-      },
-    },
-    {
-      new: true,
-    },
-  )
+    { $set: { status: "confirmed" } },
+    { new: true }
+  );
 
-
-  if (!updatedOrder) {
-    return res.status(500).json({ message: "Failed to update order" });
-  }
-
-  const result = await orderConfirmation(
-    order?.billingAddress?.email,
+  // ✅ Send Email
+  await orderConfirmation(
+    order.billingAddress.email,
     "Order Confirmation - Choose Well",
     {
-      customerName: order?.billingAddress?.firstName + " " + order?.billingAddress?.lastName,
-      orderId: order?._id.toString(),
-      totalAmount: totalAmount,
+      customerName: `${order.billingAddress.firstName} ${order.billingAddress.lastName}`,
+      orderId: order._id.toString(),
+      totalAmount: finalTotal,
       orderDate: new Date().toLocaleDateString(),
       packageData: allCodes,
       trackingLink: `/track-order/${order._id}`,
     }
   );
-
-  if (!result) {
-    return res.status(500).json({ message: "Failed to send email" });
-  }
 
   return res.status(200).json({
     message: "Order created successfully!",

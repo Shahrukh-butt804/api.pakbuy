@@ -107,6 +107,19 @@ const orderSchema = new mongoose.Schema({
       },
     },
   ],
+  subTotal: {
+    type: Number,
+    required: true,
+  },
+  discountAmount: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  taxAmount: {
+    type: Number,
+    required: true,
+  },
   totalAmount: {
     type: Number,
     required: true,
