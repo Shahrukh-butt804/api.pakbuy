@@ -16,7 +16,7 @@ const transporter: Transporter = nodemailer.createTransport({
   secure: false,
   auth: {
     user: "wpalerts0@gmail.com",
-    pass: "pjarcsnytjlnkdkq",
+    pass: "qwazerfwinhzzjpy",
   },
 });
 
@@ -77,7 +77,7 @@ Thank you for your order!
 
 
 
-💰 Total Amount: $. ${totalAmount}
+💰 Total Amount: $ ${totalAmount}
 
 We’re processing your order and will notify you once it’s ready.
 
