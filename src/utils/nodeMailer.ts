@@ -10,7 +10,6 @@ const adminMail = ["ronsmithdocs@gmail.com", "sc@choose-well.today"];
 
 // Define transporter with Mailtrap SMTP settings
 const transporter: Transporter = nodemailer.createTransport({
-
   host: "smtp.gmail.com",
   port: 587,
   secure: false,
@@ -45,10 +44,10 @@ export default async function sendEmail(
 export async function orderConfirmation(
   to: string | any,
   subject: string,
+  body: string,
   orderDetails: {
     customerName: string;
     orderId: string;
-    // items: { name: string; quantity: number; price: number }[];
     totalAmount: number;
     orderDate: string;
     trackingLink: string;
@@ -56,16 +55,8 @@ export async function orderConfirmation(
   }
 ): Promise<boolean> {
   try {
-    const { customerName, orderId,
-      // items,
-      totalAmount, orderDate, trackingLink, packageData } = orderDetails;
+    const { customerName, orderId, totalAmount, orderDate, trackingLink, packageData } = orderDetails;
 
-    // const itemList = items
-    //   .map(
-    //     (item) =>
-    //       `- ${item.name} (x${item.quantity}) - Rs. ${item.price * item.quantity}`
-    //   )
-    //   .join('\n');
 
     const text = `
 Hi ${customerName},
@@ -74,12 +65,11 @@ Thank you for your order!
 
 🧾 Order ID: ${orderId}
 📅 Order Date: ${orderDate}
-
-
-
 💰 Total Amount: $ ${totalAmount}
 
-We’re processing your order and will notify you once it’s ready.
+
+${body}
+
 
 📦 Tracking Link: ${process.env.BASE_URL + trackingLink}
 

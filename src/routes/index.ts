@@ -11,6 +11,7 @@ import resourcesRouter from "./resources";
 import couponsRouter from "./coupons";
 import collectionRouter from "./collection";
 import { isActive } from "../middlewares/isActive";
+import emailManagementRouter from "./emailManagement";
 
 const router = express.Router();
 
@@ -30,6 +31,7 @@ router.use("/news-letter", newsLetter);
 
 // admin routes
 router.use("/admin/user-management", isActive, userManagementRouter);
+router.use("/email-management", isActive, emailManagementRouter);
 
 
 export default router;

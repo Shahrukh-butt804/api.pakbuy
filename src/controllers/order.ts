@@ -11,6 +11,7 @@ import { tryCatch } from "../utils/tryCatch";
 import { Collection } from "../models/collection";
 import { Coupon } from "../models/coupon";
 import { Product } from "../models/product";
+import { EmailTemplate } from "../models/emailTemplate";
 
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
@@ -359,10 +360,14 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     { new: true }
   );
 
+
+  const templateBody = await EmailTemplate.findOne({ name: "Order Confirmation" });
+
   // ✅ Send Email
   await orderConfirmation(
     order.billingAddress.email,
     "Order Confirmation - Choose Well",
+    templateBody?.body || "Email template",
     {
       customerName: `${order.billingAddress.firstName} ${order.billingAddress.lastName}`,
       orderId: order._id.toString(),
