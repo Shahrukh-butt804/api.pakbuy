@@ -27,6 +27,14 @@ export const validateProduct = [
   body("codes")
     .optional(),
 
+  body("retailPrice")
+    .optional()
+    .isFloat({ gt: 0 })
+    .withMessage("Price must be a number greater than 0"),
+
+  body("link")
+    .optional(),
+
   body("rating")
     .notEmpty()
     .withMessage("Rating is required")

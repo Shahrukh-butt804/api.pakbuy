@@ -22,6 +22,13 @@ const productSchema = new mongoose.Schema({
     required: true
   },
   codes: [String],
+  link: {
+    type: String,
+    default: null
+  },
+  retailPrice: {
+    type: Number,
+  },
   rating: {
     type: Number,
     default: 0

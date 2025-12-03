@@ -6,7 +6,7 @@ import { recalcPrice } from "../utils/recalculateProductPrice";
 
 
 const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
-  const { name, price, description, stock, codes, collectionIds, review, rating } = req.body;
+  const { name, price, description, stock, codes, collectionIds, review, rating, link, retailPrice } = req.body;
   const images = req.files?.image
 
   if (!images || images.length == 0) {
@@ -42,7 +42,9 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
     image: images[0].path,
     codes: parsedCodes,
     review,
-    rating
+    rating,
+    link: link || null,
+    retailPrice: retailPrice || price,
   });
 
   if (!product) {
@@ -77,7 +79,7 @@ const addProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
 });
 
 const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => {
-  const { name, price, description, stock, codes, collectionIds, review, rating } = req.body;
+  const { name, price, description, stock, codes, collectionIds, review, rating, link, retailPrice } = req.body;
   const productImage = req.files?.image ? req.files.image[0].path : null;
 
 
@@ -110,6 +112,8 @@ const updateProduct = tryCatch(async (req: any, res: Response): Promise<any> => 
   if (price) product.price = price;
   if (review) product.review = review;
   if (rating) product.rating = rating;
+  if (link) product.link = link;
+  if (retailPrice) product.retailPrice = retailPrice;
 
   if (parsedCollectionIds && parsedCollectionIds.length > 0) {
 

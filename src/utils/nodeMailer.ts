@@ -15,7 +15,7 @@ const transporter: Transporter = nodemailer.createTransport({
   secure: false,
   auth: {
     user: "wpalerts0@gmail.com",
-    pass: "qwazerfwinhzzjpy",
+    pass: "uixwbvsppkbbhxpo",
   },
 });
 
@@ -73,7 +73,7 @@ ${body}
 
 📦 Tracking Link: ${process.env.BASE_URL + trackingLink}
 
-   ${packageData?.map((item: any) => ` Codes - ${item.name} = ${item.codes.join(", ")}`).join("\n")}
+   ${packageData?.map((item: any) => `Codes - ${item.name} = ${item.codes.join(", ")} \n Vendor's site Link - ${item.link || "N/A"}`).join("\n")}
 
 Thank you for choosing choose well!
 

@@ -239,7 +239,8 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
         const takenCodes = product.codes.splice(0, item.quantity);
         allCodes.push({
           name: product.name,
-          codes: takenCodes
+          codes: takenCodes,
+          link: product.link || null
         });
       }
 
