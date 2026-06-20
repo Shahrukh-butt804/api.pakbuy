@@ -1,6 +1,6 @@
 const allowedOrigins = new Set([
   "customdev.solutions",
-  "choosewell-backend.vercel.app",
+  "choosewell-user.vercel.app",
   "localhost",
 ]);
 
