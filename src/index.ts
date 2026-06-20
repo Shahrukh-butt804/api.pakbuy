@@ -36,6 +36,8 @@ const PORT = process.env.PORT || 3000;
 
 connectDB();
 
+const lastDeployAt = new Date();
+
 //limiting the api calls
 const limiter = rateLimit({
   max: 1000000,
@@ -49,7 +51,7 @@ app.use("/api", limiter);
 app.use("/Uploads", express.static("./Uploads"));
 
 app.get("/", (req: Request, res: Response) => {
-  res.send(`Choose Well Is Running on Port ${PORT}`);
+  res.send(`Choose Well Is Running on Port ${PORT}, last deployed at ${lastDeployAt}`);
 });
 
 // routes register
@@ -66,5 +68,5 @@ app.all("*", (req: Request, res: Response) => {
 app.use(errorHandler);
 
 httpsServer.listen(PORT, () => {
-  console.log(`Server is running on Port: ${PORT}`);
+  console.log(`Choose Well is running on Port: ${PORT},last deployed at ${lastDeployAt}`);
 });
