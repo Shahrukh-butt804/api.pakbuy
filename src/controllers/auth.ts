@@ -8,7 +8,7 @@ import { MemberShipPayment } from "../models/memberShipPayment";
 import { User } from "../models/user";
 import sendEmail from "../utils/nodeMailer";
 import { tryCatch } from "../utils/tryCatch";
-import { cookieOptions } from "../constants";
+import { cookieOptions } from "../config/cookieOptions";
 import { Subscription } from "../models/subscription";
 
 
