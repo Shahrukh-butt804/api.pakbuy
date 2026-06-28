@@ -41,7 +41,7 @@
   "eslint.lintTask.enable": true,
   "eslint.lintTask.options": "npm run lint",
 
-  "workbench.colorTheme": "Default Dark Modern",
+  "workbench.colorTheme": "Dark Modern",
   "workbench.iconTheme": "material-icon-theme",
   "workbench.startupEditor": "none",
   "workbench.editor.enablePreviewFromQuickOpen": true,
