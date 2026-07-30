@@ -12,6 +12,7 @@ import couponsRouter from "./coupons";
 import collectionRouter from "./collection";
 import { isActive } from "../middlewares/isActive";
 import emailManagementRouter from "./emailManagement";
+import { chatBotRouter } from "../utils/chat-bot/chat.routes";
 
 const router = express.Router();
 
@@ -32,6 +33,9 @@ router.use("/news-letter", newsLetter);
 // admin routes
 router.use("/admin/user-management", isActive, userManagementRouter);
 router.use("/email-management", isActive, emailManagementRouter);
+
+
+router.use("/chat", chatBotRouter);
 
 
 export default router;
