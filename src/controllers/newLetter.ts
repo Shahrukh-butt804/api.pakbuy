@@ -21,15 +21,7 @@ const addToNewsLetter = tryCatch(async (req: any, res: Response): Promise<any> =
     return res.status(400).json({ message: "Something went wrong please try again" });
   }
 
-  const emailSent = await newsletterRegistration(
-    email,
-    "Welcome to Choose Well Newsletter!"
-  );
-
-  if (!emailSent) {
-    return res.status(400).json({ message: "Something went wrong please try again" });
-  }
-
+  await newsletterRegistration(email, "Welcome to Choose Well Newsletter!");
 
   return res.status(200).json({
     message: "subscribed successfully",
