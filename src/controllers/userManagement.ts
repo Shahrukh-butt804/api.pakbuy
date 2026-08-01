@@ -90,14 +90,17 @@ const getAllUsers = tryCatch(async (req: any, res: Response): Promise<any> => {
   const keyword = req.query.keyword?.trim() || "";
   const skip = (page - 1) * limit;
 
-  const searchQuery = keyword
-    ? {
-      $or: [
-        { fullName: { $regex: keyword, $options: "i" } },
-        { email: { $regex: keyword, $options: "i" } },
-      ],
-    }
-    : {};
+  const searchQuery = {
+    role: "user",
+    ...(keyword
+      ? {
+        $or: [
+          { fullName: { $regex: keyword, $options: "i" } },
+          { email: { $regex: keyword, $options: "i" } },
+        ],
+      }
+      : {}),
+  };
 
   const [Users, totalDocs] = await Promise.all([
     User.find(searchQuery).skip(skip).limit(limit).sort({ createdAt: -1 }),
