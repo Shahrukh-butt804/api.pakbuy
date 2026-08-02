@@ -51,7 +51,7 @@ app.use("/api", limiter);
 app.use("/Uploads", express.static("./Uploads"));
 
 app.get("/", (req: Request, res: Response) => {
-  res.send(`Choose Well Is Running on Port ${PORT}, last deployed at ${lastDeployAt}`);
+  res.send(`pak buy Is Running on Port ${PORT}, last deployed at ${lastDeployAt}`);
 });
 
 // routes register
@@ -68,5 +68,5 @@ app.all("*", (req: Request, res: Response) => {
 app.use(errorHandler);
 
 httpsServer.listen(PORT, () => {
-  console.log(`Choose Well is running on Port: ${PORT},last deployed at ${lastDeployAt}`);
+  console.log(`pak buy is running on Port: ${PORT},last deployed at ${lastDeployAt}`);
 });

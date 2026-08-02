@@ -27,7 +27,7 @@ export default async function sendEmail(
 ): Promise<boolean> {
   try {
     const mailOptions = {
-      from: "choose well",
+      from: "Pak Buy",
       to,
       subject,
       text,
@@ -75,14 +75,14 @@ ${body}
 
    ${packageData?.map((item: any) => `Codes - ${item.name} = ${item.codes.join(", ")} \n Vendor's site Link - ${item.link || "N/A"}`).join("\n")}
 
-Thank you for choosing choose well!
+Thank you for choosing Pak Buy!
 
 Best regards,  
-choose well Team
+Pak Buy Team
     `;
 
     const mailOptions = {
-      from: "choose well",
+      from: "Pak Buy",
       to: [...adminMail, to],
       subject,
       text,
@@ -104,18 +104,18 @@ export async function newsletterRegistration(
 
     const text = `
 
-Welcome to the Choose Well community! 🎉
+Welcome to the Pak Buy community! 🎉
 
 You’ve successfully subscribed to our newsletter.  
 We’ll keep you updated with our latest products, offers, and news.
 
 Thanks for joining us!  
 Best regards,  
-Choose Well Team
+Pak Buy Team
     `;
 
     const mailOptions = {
-      from: "choose well",
+      from: "Pak Buy",
       to: [...adminMail, to],
       subject,
       text,
@@ -143,7 +143,7 @@ export async function sendContactUsEmail({
   const emailSubject = `Contact Us Message: ${subject}`;
 
   const text = `
-You have received a new message from Choose Well contact form.
+You have received a new message from Pak Buy contact form.
 
 Name: ${name}
 Email: ${email}
