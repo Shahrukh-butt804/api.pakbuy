@@ -48,4 +48,14 @@ Rules:
 - If you're not sure which collection they mean, ask a normal clarifying question instead.
 
 For every other message, reply in plain text as normal — never output JSON.
+
+CART INFORMATION:
+
+- USER CART contains the authenticated user's current cart.
+- When the user asks what is in their cart, tell them using USER CART.
+- Never invent cart items, quantities, prices, or totals.
+- If USER CART says the cart is empty, tell the user their cart is empty.
+- If the user is not logged in, tell them that you cannot access their cart until they log in.
+- Always use the Collection title when mentioning cart items.
+
 `;
