@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { callOpenRouter, ChatMessage } from ".";
 import { addToCart, CollectionNotFoundError, getCart, removeFromCart, updateQuantity } from "./cart.service";
 import { SYSTEM_PROMPT } from "./prompts/systemPrompt";
+import { createOrder, getLastOrder, getOrderSummary, getUserOrders } from "./orderService/orderService";
 
 export interface AuthenticatedUser {
   _id: mongoose.Types.ObjectId;
@@ -214,13 +215,24 @@ async function getUserCartContext(user?: AuthenticatedUser): Promise<string> {
   }
 }
 
-interface CartAction {
-  action: "add_to_cart" | "update_cart" | "remove_from_cart";
-  collectionTitle: string;
+interface AgentAction {
+  action:
+  | "add_to_cart"
+  | "update_cart"
+  | "remove_from_cart"
+  | "place_order"
+  | "get_cart"
+  | "get_orders"
+  | "get_last_order"
+  | "get_order_status"
+  | "get_order_summary";
+
+  collectionTitle?: string | any;
   quantity?: number;
+  orderId?: string;
 }
 
-function tryParseCartAction(reply: string): CartAction | null {
+function tryParseCartAction(reply: string): AgentAction | null {
   const trimmed = reply.trim();
 
   if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) {
@@ -234,29 +246,55 @@ function tryParseCartAction(reply: string): CartAction | null {
       "add_to_cart",
       "update_cart",
       "remove_from_cart",
+      "place_order",
+      "get_cart",
+      "get_orders",
+      "get_last_order",
+      "get_order_status",
+      "get_order_summary",
     ];
 
-    if (
-      validActions.includes(parsed?.action) &&
-      typeof parsed.collectionTitle === "string"
-    ) {
-      if (
-        parsed.action === "remove_from_cart"
-      ) {
-        return parsed as CartAction;
-      }
-
-      if (
-        Number.isInteger(parsed.quantity) &&
-        parsed.quantity > 0
-      ) {
-        return parsed as CartAction;
-      }
-
+    if (!validActions.includes(parsed?.action)) {
       return null;
     }
 
-    return null;
+    if (parsed.action === "place_order") {
+      return {
+        action: "place_order",
+      };
+    }
+
+    if (
+      ["add_to_cart", "update_cart", "remove_from_cart"].includes(
+        parsed.action
+      )
+    ) {
+      if (typeof parsed.collectionTitle !== "string") {
+        return null;
+      }
+
+      if (parsed.action === "remove_from_cart") {
+        return {
+          action: parsed.action,
+          collectionTitle: parsed.collectionTitle,
+        };
+      }
+
+      if (
+        !Number.isInteger(parsed.quantity) ||
+        parsed.quantity <= 0
+      ) {
+        return null;
+      }
+
+      return {
+        action: parsed.action,
+        collectionTitle: parsed.collectionTitle,
+        quantity: parsed.quantity,
+      };
+    }
+
+    return parsed as AgentAction;
   } catch {
     return null;
   }
@@ -343,6 +381,39 @@ export async function getChatReply(
       return `Removed "${action.collectionTitle}" from your cart. Your cart total is now Rs ${cart.totalAmount
         }.`;
     }
+
+    if (action.action === "place_order") {
+      const order = await createOrder(userId);
+
+      return `Your order has been placed successfully. Your order ID is ${order._id}.`;
+    }
+
+    if (action.action === "get_orders") {
+      const orders = await getUserOrders(userId);
+
+      if (!orders.length) {
+        return "You haven't placed any orders yet.";
+      }
+
+      // Convert backend data into safe context for the model
+    }
+
+    if (action.action === "get_last_order") {
+      const order = await getLastOrder(userId);
+
+      if (!order) {
+        return "You haven't placed any orders yet.";
+      }
+
+      // return order information
+    }
+
+    if (action.action === "get_order_summary") {
+      const summary = await getOrderSummary(userId);
+
+      return `You have placed ${summary.totalOrders} orders with a total spending of Rs ${summary.totalSpent}.`;
+    }
+
 
     return reply;
   } catch (err) {
