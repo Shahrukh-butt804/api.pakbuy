@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { callOpenRouter, ChatMessage } from ".";
-import { addToCart, CollectionNotFoundError, removeFromCart, updateQuantity } from "./cart.service";
+import { addToCart, CollectionNotFoundError, getCart, removeFromCart, updateQuantity } from "./cart.service";
 import { SYSTEM_PROMPT } from "./prompts/systemPrompt";
 
 export interface AuthenticatedUser {
@@ -174,6 +174,46 @@ async function getCatalogContext(userMessage: string): Promise<string> {
   }
 }
 
+async function getUserCartContext(user?: AuthenticatedUser): Promise<string> {
+  if (!user?._id) {
+    return "USER CART: User is not logged in.";
+  }
+
+  try {
+    const cart: any = await getCart(user._id.toString());
+
+    if (!cart.items?.length) {
+      return "USER CART: The user's cart is empty.";
+    }
+
+    const items = cart.items
+      .map((item: any) => {
+        const collection = item.collection;
+
+        if (!collection) return null;
+
+        return [
+          `Collection: ${collection.title}`,
+          `Quantity: ${item.quantity}`,
+          `Unit Price: Rs ${collection.CollectionPrice ?? 0}`,
+          `Subtotal: Rs ${item.subTotal ?? 0}`,
+        ].join("\n");
+      })
+      .filter(Boolean)
+      .join("\n---\n");
+
+    return [
+      "USER CART:",
+      items,
+      `Cart Total: Rs ${cart.totalAmount ?? 0}`,
+    ].join("\n");
+  } catch (error) {
+    console.error("Cart context error:", error);
+
+    return "USER CART: Unable to retrieve the user's cart.";
+  }
+}
+
 interface CartAction {
   action: "add_to_cart" | "update_cart" | "remove_from_cart";
   collectionTitle: string;
@@ -228,16 +268,28 @@ export async function getChatReply(
   user?: AuthenticatedUser,
 ): Promise<string> {
   const context = await getCatalogContext(userMessage);
+  const cartContext = await getUserCartContext(user);
+
 
   const messages: ChatMessage[] = [
     {
       role: "system",
-      content: context
-        ? `${SYSTEM_PROMPT}\n\nCATALOG CONTEXT:\n${context}`
-        : SYSTEM_PROMPT,
+      content: `
+            ${SYSTEM_PROMPT}
+
+            CATALOG CONTEXT:
+            ${context || "No catalog context available."}
+
+            ${cartContext}
+   `,
     },
-    ...history.slice(-6), // keep the payload small — last 3 exchanges
-    { role: "user", content: userMessage },
+
+    ...history.slice(-6),
+
+    {
+      role: "user",
+      content: userMessage,
+    },
   ];
 
   const reply = await callOpenRouter(messages);

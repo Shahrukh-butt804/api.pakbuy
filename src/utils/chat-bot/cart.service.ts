@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import { Cart } from "../../models/cart";
 import { Collection } from "../../models/collection";
 
+
+
 export class CollectionNotFoundError extends Error {
   constructor(nameOrId: string) {
     super(`Collection not found: ${nameOrId}`);
