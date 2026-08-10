@@ -12,6 +12,7 @@ import { Collection } from "../models/collection";
 import { Coupon } from "../models/coupon";
 import { Product } from "../models/product";
 import { EmailTemplate } from "../models/emailTemplate";
+import { Cart } from "../models/cart";
 
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
@@ -24,14 +25,7 @@ const getStripeKeys = tryCatch(async (req: any, res: Response): Promise<any> => 
 });
 
 const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
-  const {
-    billingAddress,
-    shippingAddress,
-    token,
-    orderNote,
-    products,
-    couponId
-  } = req.body;
+  const { billingAddress, shippingAddress, token, orderNote, products, couponId } = req.body;
 
   let baseAmount = 0;
   let allCodes: any[] = [];
@@ -204,6 +198,8 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
       trackingLink: `/track-order/${order._id}`,
     }
   );
+
+  await Cart.findOneAndUpdate({ user: req.user._id }, { items: [], totalAmount: 0 })
 
   return res.status(200).json({
     message: "Order created successfully!",

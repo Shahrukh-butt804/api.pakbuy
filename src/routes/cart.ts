@@ -5,9 +5,9 @@ import { addToCart, deleteFromCart, getMyCart, updateCart } from "../controllers
 
 const cartRouter = Router();
 
-cartRouter.route("/get-my-cart").get(verifyJWT, getMyCart);
-cartRouter.route("/add-to-cart").post(verifyJWT, addToCart);
-cartRouter.route("/update-cart").put(verifyJWT, updateCart);
-cartRouter.route("/delete-from-cart/:id").delete(verifyJWT, deleteFromCart);
+cartRouter.route("/").get(verifyJWT, getMyCart);
+cartRouter.route("/").post(verifyJWT, addToCart);
+cartRouter.route("/").put(verifyJWT, updateCart);
+cartRouter.route("/:id").delete(verifyJWT, deleteFromCart);
 
 export default cartRouter;
