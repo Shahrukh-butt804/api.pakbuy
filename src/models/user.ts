@@ -48,7 +48,11 @@ const userSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true,
-    }
+    },
+    paymentSource: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true },
 );

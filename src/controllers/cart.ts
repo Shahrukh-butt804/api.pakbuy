@@ -4,146 +4,209 @@ import { tryCatch } from "../utils/tryCatch";
 import { Collection } from "../models/collection";
 
 const addToCart = tryCatch(async (req: any, res: Response): Promise<any> => {
+  const { collectionId, quantity } = req.body;
 
-  const {
-    productId, quantity,
-  } = req.body;
-
-  if (!productId || isNaN(quantity) || quantity < 1) {
-    return res.status(400).json({ message: "Invalid product or quantity" });
+  if (!collectionId || !Number.isInteger(Number(quantity)) || Number(quantity) < 1) {
+    return res.status(400).json({ message: "Invalid collection or quantity" });
   }
 
-  const product: any = await Collection.findById(productId);
+  const collection: any = await Collection.findById(collectionId)
+    .select("_id title CollectionPrice")
+    .lean();
 
-  if (!product) {
-    return res.status(404).json({ message: "Product not found" });
+  if (!collection) {
+    return res.status(404).json({
+      message: "Collection not found",
+    });
   }
 
-  const cart: any = await Cart.findOne({ user: req.user._id });
+  const qty = Number(quantity);
+
+  let cart: any = await Cart.findOne({
+    user: req.user._id,
+  });
 
   if (!cart) {
-    const newCart = await Cart.create({
+    cart = await Cart.create({
       user: req.user._id,
       items: [
         {
-          product: product._id,
-          quantity,
-          price: product.price,
+          collection: collection._id,
+          quantity: qty,
+          subTotal: collection.CollectionPrice * qty,
         },
       ],
-      totalAmount: product.price * quantity,
+      totalAmount: collection.CollectionPrice * qty,
     });
+
     return res.status(200).json({
-      message: "Product added to cart successfully!",
-      cart: newCart,
+      success: true,
+      message: "Collection added to cart successfully!",
+      cart,
     });
   }
 
   const existingCartItem = cart.items.find(
-    (item: any) => item.product.toString() === productId,
+    (item: any) =>
+      String(item.collection) === String(collection._id)
   );
 
   if (existingCartItem) {
-    existingCartItem.quantity += quantity;
-
-  }
-  else {
-    const cartItem = {
-      product: product._id,
-      quantity,
-      price: product.price,
-    };
-
-    cart.items.push(cartItem);
-
+    existingCartItem.quantity += qty;
+    existingCartItem.subTotal =
+      collection.CollectionPrice * existingCartItem.quantity;
+  } else {
+    cart.items.push({
+      collection: collection._id,
+      quantity: qty,
+      subTotal: collection.CollectionPrice * qty,
+    });
   }
 
-  cart.totalAmount += product.price * quantity;
+  // Recalculate total
+  cart.totalAmount = cart.items.reduce(
+    (total: number, item: any) => total + item.subTotal,
+    0
+  );
+
   await cart.save();
 
   return res.status(200).json({
-    message: "Product added to cart successfully!",
+    success: true,
+    message: "Collection added to cart successfully!",
     cart,
   });
-
 });
 
 const updateCart = tryCatch(async (req: any, res: Response): Promise<any> => {
+  const { collectionId, quantity } = req.body;
 
-  const {
-    productId, quantity,
-  } = req.body;
-
-  if (!productId || isNaN(quantity) || quantity < 1) {
-    return res.status(400).json({ message: "Invalid product or quantity" });
+  if (
+    !collectionId ||
+    !Number.isInteger(Number(quantity)) ||
+    Number(quantity) < 1
+  ) {
+    return res.status(400).json({
+      message: "Invalid collection or quantity",
+    });
   }
 
-  const cart: any = await Cart.findOne({ user: req.user._id });
+  const qty = Number(quantity);
+
+  const collection: any = await Collection.findById(collectionId)
+    .select("_id CollectionPrice")
+    .lean();
+
+  if (!collection) {
+    return res.status(404).json({
+      message: "Collection not found",
+    });
+  }
+
+  const cart: any = await Cart.findOne({
+    user: req.user._id,
+  });
 
   if (!cart) {
-    return res.status(404).json({ message: "Cart not found" });
+    return res.status(404).json({
+      message: "Cart not found",
+    });
   }
 
-  cart.items.forEach((item: any) => {
-    if (item.product.toString() === productId) {
-      item.quantity = quantity;
-    }
-  });
+  const existingCartItem = cart.items.find(
+    (item: any) =>
+      String(item.collection) === String(collectionId)
+  );
 
-  cart.totalAmount = 0;
-  cart.items.forEach((item: any) => {
-    cart.totalAmount += item.price * item.quantity;
-  });
+  if (!existingCartItem) {
+    return res.status(404).json({
+      message: "Collection not found in cart",
+    });
+  }
+
+  existingCartItem.quantity = qty;
+
+  existingCartItem.subTotal =
+    collection.CollectionPrice * qty;
+
+  // Recalculate total
+  cart.totalAmount = cart.items.reduce(
+    (total: number, item: any) => total + item.subTotal,
+    0
+  );
 
   await cart.save();
+
   return res.status(200).json({
-    message: "Cart Updated Successfully!",
+    message: "Cart updated successfully!",
     cart,
   });
-
 });
 
 const getMyCart = tryCatch(async (req: any, res: Response): Promise<any> => {
-  const cart = await Cart.findOne({ user: req.user._id });
+  const cart: any = await Cart.findOne({
+    user: req.user._id,
+  }).populate({
+    path: "items.collection",
+    select: "_id title name image CollectionPrice",
+  });
 
   if (!cart) {
-    return res.status(404).json({ message: "Cart not found" });
+    return res.status(404).json({
+      message: "Cart not found",
+    });
   }
 
   return res.status(200).json({
-    message: "cart fetched successfully!",
+    message: "Cart fetched successfully!",
     cart,
   });
-
 });
 
-const deleteFromCart = tryCatch(
-  async (req: any, res: Response): Promise<any> => {
+const deleteFromCart = tryCatch(async (req: any, res: Response): Promise<any> => {
+  const { id } = req.params;
 
-    const cart: any = await Cart.findOne({ user: req.user._id });
-
-    if (!cart) {
-      return res.status(404).json({ message: "Cart not found" });
-    }
-
-    const filteredItems = cart.items.filter((item: any) => item.product.toString() !== req.params.id);
-    if (filteredItems.length === cart.items.length) {
-      return res.status(404).json({ message: "Product not found in cart" });
-    }
-
-    cart.totalAmount = 0;
-    cart.items.forEach((item: any) => {
-      cart.totalAmount += item.price * item.quantity;
-    });
-
-    cart.items = filteredItems;
-    await cart.save();
-    return res.status(200).json({
-      message: "Product deleted from cart successfully!",
-      cart,
-    });
-
+  const cart: any = await Cart.findOne({
+    user: req.user._id,
   });
+
+  if (!cart) {
+    return res.status(404).json({
+      message: "Cart not found",
+    });
+  }
+
+  const itemExists = cart.items.some(
+    (item: any) =>
+      String(item.collection) === String(id)
+  );
+
+  if (!itemExists) {
+    return res.status(404).json({
+      message: "Collection not found in cart",
+    });
+  }
+
+  // Completely remove the collection from cart
+  cart.items = cart.items.filter(
+    (item: any) =>
+      String(item.collection) !== String(id)
+  );
+
+  // Recalculate total after removing item
+  cart.totalAmount = cart.items.reduce(
+    (total: number, item: any) => total + item.subTotal,
+    0
+  );
+
+  await cart.save();
+
+  return res.status(200).json({
+    message: "Collection removed from cart successfully!",
+    cart,
+  });
+}
+);
 
 
 export {
