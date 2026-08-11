@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { callOpenRouter, ChatMessage } from ".";
 import { addToCart, CollectionNotFoundError, getCart, removeFromCart, updateQuantity } from "./cart.service";
 import { SYSTEM_PROMPT } from "./prompts/systemPrompt";
-import { createOrder, getLastOrder, getOrderSummary, getUserOrders } from "./orderService/orderService";
+import { createOrder, getLastOrder, getOrderSummary, getUserOrders, OrderError } from "./orderService/orderService";
 
 export interface AuthenticatedUser {
   _id: mongoose.Types.ObjectId;
@@ -17,80 +17,6 @@ function stripHtml(html: string): string {
     .replace(/\s+/g, " ")
     .trim();
 }
-
-// async function getCatalogContext(userMessage: string): Promise<string> {
-//   try {
-//     // Reuses whatever Collection model is already registered elsewhere in
-//     // your app (e.g. src/models/Collection.ts) — no need to redefine the
-//     // schema here.
-//     const Collection = mongoose.model("Collection");
-
-//     const keywords = userMessage
-//       .split(/\s+/)
-//       .filter((w) => w.length > 2)
-//       .slice(0, 6);
-
-//     const regexes = keywords.map((k) => new RegExp(k, "i"));
-
-//     let collections = keywords.length
-//       ? await Collection.find({
-//         $or: [
-//           { name: { $in: regexes } },
-//           { title: { $in: regexes } },
-//           { slogan: { $in: regexes } },
-//           { about: { $in: regexes } },
-//           { "description.heading": { $in: regexes } },
-//           { "description.text": { $in: regexes } },
-//         ],
-//       })
-//         .limit(5)
-//         .select("name title slogan about description CollectionPrice products")
-//         .populate({ path: "products", select: "name", options: { limit: 8 } })
-//         .lean()
-//       : [];
-
-//     // No keyword match (or a generic question like "what do you sell?") —
-//     // fall back to a general sample so the bot still has something real to
-//     // ground its answer in instead of saying nothing.
-//     if (!collections.length) {
-//       collections = await Collection.find({})
-//         .limit(5)
-//         .select("name title slogan about description CollectionPrice products")
-//         .populate({ path: "products", select: "name", options: { limit: 8 } })
-//         .lean();
-//     }
-
-//     if (!collections.length) return "";
-
-//     return collections
-//       .map((c: any) => {
-//         const descBlocks = (c.description || [])
-//           .map((d: any) => `${d.heading}: ${d.text}`)
-//           .join(" | ");
-//         const about = c.about ? stripHtml(c.about).slice(0, 400) : "";
-//         const productNames = (c.products || [])
-//           .map((p: any) => p.name)
-//           .filter(Boolean)
-//           .join(", ");
-
-//         return [
-//           `Collection: ${c.title} (${c.name})`,
-//           `Slogan: ${c.slogan}`,
-//           `Price: Rs ${c.CollectionPrice ?? 0}`,
-//           descBlocks && `Highlights: ${descBlocks}`,
-//           about && `About: ${about}`,
-//           productNames && `Includes: ${productNames}`,
-//         ]
-//           .filter(Boolean)
-//           .join("\n");
-//       })
-//       .join("\n---\n");
-//   } catch {
-//     // Collection model not registered yet, or query failed — degrade
-//     // gracefully to a context-free reply rather than breaking the chat.
-//     return "";
-//   }
-// }
 
 async function getCatalogContext(userMessage: string): Promise<string> {
   try {
@@ -418,7 +344,11 @@ export async function getChatReply(
     return reply;
   } catch (err) {
     if (err instanceof CollectionNotFoundError) {
-      return `I couldn't find "${action.collectionTitle}" in the catalog — could you double check the title?`;
+      return err.message
+    }
+
+    if (err instanceof OrderError) {
+      return err.message;
     }
 
     console.error("Cart action error:", err);

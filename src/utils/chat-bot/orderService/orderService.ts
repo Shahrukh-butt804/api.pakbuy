@@ -14,6 +14,8 @@ export class OrderError extends Error {
       | "NO_PAYMENT_SOURCE"
       | "PAYMENT_FAILED"
       | "ORDER_NOT_FOUND"
+      | "NO_PREVIOUS_ORDER"
+      | "EMPTY_CART"
       | "ORDER_CREATION_FAILED",
     message: string
   ) {
@@ -21,6 +23,8 @@ export class OrderError extends Error {
     this.name = "OrderError";
   }
 }
+
+
 
 
 async function getCheckoutCart(userId: string) {
@@ -85,79 +89,75 @@ export async function createOrder(userId: string) {
     );
   }
 
-  // if (!user.paymentSource) {
-  //   throw new OrderError(
-  //     "NO_PAYMENT_SOURCE",
-  //     "First You have make first order manually then payment will be automatically linked to your account"
-  //   );
-  // }
+  const lastOrder: any = await Order.findOne({ user: user._id })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  if (!lastOrder) {
+    throw new OrderError(
+      "NO_PREVIOUS_ORDER",
+      "You need to place at least one order manually before you can place orders using the Assistant."
+    );
+  }
+
+  if (!lastOrder.stripeSource) {
+    throw new OrderError(
+      "NO_PAYMENT_SOURCE",
+      "Your previous order does not have a payment method available. Please place an order manually first."
+    );
+  }
+
 
   const checkout = await getCheckoutCart(userId);
 
-  try {
+  if (!checkout.items?.length) {
+    throw new OrderError(
+      "EMPTY_CART",
+      "Your cart is empty. Add something to your cart before placing the order."
+    );
+  }
 
-    // ✅ Stripe Customer
+  let charge: any;
+
+  try {
     const customer = await stripe.customers.create({
-      email: user.email,
-      source: "tok_visa",
+      email: lastOrder.billingAddress?.email || user.email,
+      source: lastOrder.stripeSource,
     });
 
-    // ✅ Charge customer (with tax)
-    const charge = await stripe.charges.create({
+    charge = await stripe.charges.create({
       amount: Math.round(checkout.totalAmount * 100),
       currency: "usd",
-      description: `Charge for order by ${user.email}`,
-      customer: customer.id
+      description: `Charge for order by ${lastOrder.billingAddress?.email || user.email}`,
+      customer: customer.id,
     });
 
     if (charge.status !== "succeeded") {
       throw new OrderError(
         "PAYMENT_FAILED",
-        "Payment failed"
+        "Payment failed. Your order was not placed."
       );
     }
 
   } catch (error) {
-    console.error("Payment error:", error);
-
+    if (error instanceof OrderError) { throw error }
+    console.error("AI order payment error:", error);
     throw new OrderError(
       "PAYMENT_FAILED",
-      "Payment failed"
+      "Payment failed. Your order was not placed."
     );
   }
 
   const order = await Order.create({
     user: user._id,
-    billingAddress: {
-      firstName: "Test",
-      lastName: "User",
-      address: "123 Test Street",
-      country: "Pakistan",
-      state: "Sindh",
-      city: "Karachi",
-      zipCode: "74000",
-      email: user.email,
-      phone: "03001234567",
-    },
-    shippingAddress: {
-      firstName: "Test",
-      lastName: "User",
-      address: "123 Test Street",
-      country: "Pakistan",
-      state: "Sindh",
-      city: "Karachi",
-      zipCode: "74000",
-      email: user.email,
-      phone: "03001234567",
-    },
-    stripeSource: "tok_visa",
-    orderNote: "",
-
+    billingAddress: lastOrder.billingAddress,
+    shippingAddress: lastOrder.shippingAddress,
+    stripeSource: lastOrder.stripeSource,
+    orderNote: "Order Placed By Assistant",
     products: checkout.items.map((item: any) => ({
       collectionId: item.collection,
       quantity: item.quantity,
     })),
-
     subTotal: checkout.totalAmount,
     discountAmount: 0,
     taxAmount: 0,
@@ -165,15 +165,10 @@ export async function createOrder(userId: string) {
     status: "pending",
   });
 
-  // Only clear the cart AFTER order creation succeeds.
+
   await Cart.findOneAndUpdate(
     { user: user._id },
-    {
-      $set: {
-        items: [],
-        totalAmount: 0,
-      },
-    }
+    { $set: { items: [], totalAmount: 0 } }
   );
 
   return order;
