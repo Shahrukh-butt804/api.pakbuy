@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { callOpenRouter, ChatMessage } from ".";
 import { addToCart, CollectionNotFoundError, getCart, removeFromCart, updateQuantity } from "./cart.service";
 import { SYSTEM_PROMPT } from "./prompts/systemPrompt";
-import { createOrder, getLastOrder, getOrderSummary, getUserOrders, OrderError } from "./orderService/orderService";
+import { createOrder, findOrder, getFirstOrder, getLastOrder, getOrderSummary, getUserOrders, OrderError } from "./orderService/orderService";
 
 export interface AuthenticatedUser {
   _id: mongoose.Types.ObjectId;
@@ -150,12 +150,21 @@ interface AgentAction {
   | "get_cart"
   | "get_orders"
   | "get_last_order"
+  | "get_first_order"
   | "get_order_status"
-  | "get_order_summary";
+  | "get_order_summary"
+  | "find_order";
 
+  // Cart
   collectionTitle?: string | any;
   quantity?: number;
+
+  // Order search
   orderId?: string;
+  date?: string;
+  status?: "pending" | "confirmed" | "dispatched" | "delivered" | "cancelled";
+  totalAmount?: number;
+  productCount?: number;
 }
 
 function tryParseCartAction(reply: string): AgentAction | null {
@@ -176,8 +185,10 @@ function tryParseCartAction(reply: string): AgentAction | null {
       "get_cart",
       "get_orders",
       "get_last_order",
+      "get_first_order",
       "get_order_status",
       "get_order_summary",
+      "find_order",
     ];
 
     if (!validActions.includes(parsed?.action)) {
@@ -315,23 +326,89 @@ export async function getChatReply(
     }
 
     if (action.action === "get_orders") {
-      const orders = await getUserOrders(userId);
+      const orders: any[] = await getUserOrders(userId);
 
       if (!orders.length) {
         return "You haven't placed any orders yet.";
       }
 
-      // Convert backend data into safe context for the model
+      const orderList = orders
+        .map((order: any, index: number) => {
+          const items =
+            order.products
+              ?.map(
+                (item: any) =>
+                  `${item.collectionId?.title || item.collectionId?.name || "Unknown item"} (x${item.quantity})`
+              )
+              .join(", ") || "No items";
+
+          return `${index + 1}. Order #${order._id} — ${items} — Rs ${order.totalAmount} — ${order.status}`;
+        })
+        .join("\n");
+
+      return `You have placed ${orders.length} orders:\n\n${orderList}`;
     }
 
     if (action.action === "get_last_order") {
-      const order = await getLastOrder(userId);
+      const order: any = await getLastOrder(userId);
 
       if (!order) {
         return "You haven't placed any orders yet.";
       }
 
-      // return order information
+      const products = order.products
+        ?.map((item: any) => {
+          const collection = item.collectionId;
+
+          return `${collection?.title || collection?.name || "Unknown item"} (x${item.quantity})`;
+        })
+        .join(", ");
+
+      return `Your last order was placed on ${new Date(
+        order.createdAt
+      ).toLocaleDateString()}.
+
+Order ID: ${order._id}
+
+Items: ${products || "No items found"}
+
+Subtotal: Rs ${order.subTotal}
+Discount: Rs ${order.discountAmount}
+Tax: Rs ${order.taxAmount}
+Total: Rs ${order.totalAmount}
+
+Status: ${order.status}.`;
+    }
+
+    if (action.action === "get_first_order") {
+      const order: any = await getFirstOrder(userId);
+
+      if (!order) {
+        return "You haven't placed any orders yet.";
+      }
+
+      const products = order.products
+        ?.map((item: any) => {
+          const collection = item.collectionId;
+
+          return `${collection?.title || collection?.name || "Unknown item"} (x${item.quantity})`;
+        })
+        .join(", ");
+
+      return `Your first order was placed on ${new Date(
+        order.createdAt
+      ).toLocaleDateString()}.
+
+Order ID: ${order._id}
+
+Items: ${products || "No items found"}
+
+Subtotal: Rs ${order.subTotal}
+Discount: Rs ${order.discountAmount}
+Tax: Rs ${order.taxAmount}
+Total: Rs ${order.totalAmount}
+
+Status: ${order.status}.`;
     }
 
     if (action.action === "get_order_summary") {
@@ -340,6 +417,48 @@ export async function getChatReply(
       return `You have placed ${summary.totalOrders} orders with a total spending of Rs ${summary.totalSpent}.`;
     }
 
+    if (action.action === "find_order") {
+      try {
+        const orders: any[] = await findOrder(userId, {
+          date: action.date,
+          status: action.status,
+          totalAmount: action.totalAmount,
+          productCount: action.productCount,
+        });
+
+        const orderDetails = orders
+          .map((order: any, index: number) => {
+            const products = order.products
+              ?.map((item: any) => {
+                const collection = item.collectionId;
+
+                return `${collection?.title || collection?.name || "Unknown item"} (x${item.quantity})`;
+              })
+              .join(", ");
+
+            return `${index + 1}. Order ID: ${order._id}
+Date: ${new Date(order.createdAt).toLocaleDateString()}
+Items: ${products || "No items found"}
+Subtotal: Rs ${order.subTotal}
+Discount: Rs ${order.discountAmount}
+Tax: Rs ${order.taxAmount}
+Total: Rs ${order.totalAmount}
+Status: ${order.status}`;
+          })
+          .join("\n\n");
+
+        return `I found ${orders.length} matching ${orders.length === 1 ? "order" : "orders"
+          }:
+
+${orderDetails}`;
+      } catch (error) {
+        if (error instanceof OrderError) {
+          return error.message;
+        }
+        console.error("Find orders error:", error);
+        return "For now, I am not able to find those orders.";
+      }
+    }
 
     return reply;
   } catch (err) {

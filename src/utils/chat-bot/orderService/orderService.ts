@@ -1,13 +1,16 @@
 import mongoose from "mongoose";
 import { Cart } from "../../../models/cart";
 import { Order } from "../../../models/order";
-import Stripe from "stripe";
+import { Payment } from "../../../models/payment";
 import { User } from "../../../models/user";
 import { makeStripePayment } from "../../stripe";
-import { Payment } from "../../../models/payment";
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
-
+interface OrderSearchFilters {
+  date?: string;
+  status?: string;
+  totalAmount?: number;
+  productCount?: number;
+}
 export class OrderError extends Error {
   constructor(
     public code:
@@ -188,13 +191,11 @@ export async function createOrder(userId: string) {
 }
 
 export async function getUserOrders(userId: string) {
-  return Order.find({
-    user: userId,
-  })
+  return Order.find({ user: userId })
     .sort({ createdAt: -1 })
     .populate({
-      path: "items.collection",
-      select: "title image",
+      path: "products.collectionId",
+      select: "title name image CollectionPrice",
     })
     .lean();
 }
@@ -205,41 +206,79 @@ export async function getLastOrder(userId: string) {
   })
     .sort({ createdAt: -1 })
     .populate({
-      path: "items.collection",
-      select: "title image",
+      path: "products.collectionId",
+      select: "title name image CollectionPrice",
     })
     .lean();
 }
 
-export async function getOrderById(
-  userId: string,
-  orderId: string
-) {
-  if (!mongoose.isValidObjectId(orderId)) {
-    throw new OrderError(
-      "ORDER_NOT_FOUND",
-      "Invalid order ID"
-    );
-  }
-
-  const order = await Order.findOne({
-    _id: orderId,
+export async function getFirstOrder(userId: string) {
+  return Order.findOne({
     user: userId,
   })
+    .sort({ createdAt: 1 })
     .populate({
-      path: "items.collection",
-      select: "title image",
+      path: "products.collectionId",
+      select: "title name image CollectionPrice",
+    })
+    .lean();
+}
+
+export async function findOrder(userId: string, filters: OrderSearchFilters) {
+  const query: any = {
+    user: userId,
+  };
+
+  // Status
+  if (filters.status) {
+    query.status = filters.status;
+  }
+
+  // Total amount
+  if (filters.totalAmount !== undefined) {
+    query.totalAmount = filters.totalAmount;
+  }
+
+  // Date
+  if (filters.date) {
+    const startDate = new Date(filters.date);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(filters.date);
+    endDate.setHours(23, 59, 59, 999);
+
+    query.createdAt = {
+      $gte: startDate,
+      $lte: endDate,
+    };
+  }
+
+  // Number of different product/collection types
+  if (filters.productCount !== undefined) {
+    query.$expr = {
+      $eq: [
+        { $size: "$products" },
+        filters.productCount,
+      ],
+    };
+  }
+
+  const orders = await Order.find(query)
+    .sort({ createdAt: -1 })
+    .populate({
+      path: "products.collectionId",
+      select: "title name image CollectionPrice",
     })
     .lean();
 
-  if (!order) {
+  if (!orders.length) {
     throw new OrderError(
       "ORDER_NOT_FOUND",
-      "Order not found"
+      "No matching orders were found."
     );
   }
 
-  return order;
+  return orders;
 }
 
 export async function getOrderSummary(userId: string) {
