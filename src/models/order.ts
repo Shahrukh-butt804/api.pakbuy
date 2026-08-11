@@ -85,7 +85,7 @@ const orderSchema = new mongoose.Schema({
   },
 
   // order details
-  stripeSource: {
+  paymentSource: {
     type: String,
     required: true,
   },

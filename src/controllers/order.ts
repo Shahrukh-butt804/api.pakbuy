@@ -13,6 +13,7 @@ import { Coupon } from "../models/coupon";
 import { Product } from "../models/product";
 import { EmailTemplate } from "../models/emailTemplate";
 import { Cart } from "../models/cart";
+import { makeStripePayment } from "../utils/stripe";
 
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
@@ -105,9 +106,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
 
   // ✅ Adjust line items for discount proportionally
   const discountRatio = amountAfterDiscount / baseAmount || 0;
-  lineItems.forEach(item => {
-    item.amount = Math.round(item.amount * discountRatio);
-  });
+  lineItems.forEach(item => { item.amount = Math.round(item.amount * discountRatio) });
 
   // ✅ STRIPE TAX CALCULATION
   const taxCalculation: any = await stripe.tax.calculations.create({
@@ -133,7 +132,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     user: req.user?._id || null,
     billingAddress,
     shippingAddress: shippingAddress || billingAddress,
-    stripeSource: token,
+    paymentSource: token,
     orderNote: orderNote || "",
     products,
     subTotal: baseAmount,
@@ -144,35 +143,24 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
 
   if (!order) return res.status(500).json({ message: "Failed to create order" });
 
-  // ✅ Stripe Customer
-  const customer = await stripe.customers.create({
-    email: billingAddress.email,
-    source: token,
-  });
+  const { status, message, charge } = await makeStripePayment({
+    token,
+    amount: finalTotal,
+    description: `Order placed User (${req.user.fullName})`,
+    user: req.user
+  })
 
-  // ✅ Charge customer (with tax)
-  const charge = await stripe.charges.create({
-    amount: Math.round(finalTotal * 100),
-    currency: "usd",
-    description: orderNote || "",
-    customer: customer.id
-  });
-
-  if (charge.status !== "succeeded") {
-    return res.status(400).json({ message: "Payment Failed From Stripe" });
+  if (!status) {
+    return res.status(400).json({ message });
   }
 
   // ✅ Save Payment
-  const payment = await Payment.create({
+  await Payment.create({
     orderId: order._id,
     amount: finalTotal,
     paymentMethod: "Stripe",
     metaData: charge
   });
-
-  if (!payment) {
-    return res.status(500).json({ message: "Failed to create payment" });
-  }
 
   // ✅ Confirm order
   const updatedOrder = await Order.findByIdAndUpdate(
@@ -180,7 +168,6 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     { $set: { status: "confirmed" } },
     { new: true }
   );
-
 
   const templateBody = await EmailTemplate.findOne({ name: "Order Confirmation" });
 
@@ -206,6 +193,7 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     success: true,
     order: updatedOrder,
   });
+
 });
 
 const getAllOrder = tryCatch(async (req: any, res: Response): Promise<any> => {

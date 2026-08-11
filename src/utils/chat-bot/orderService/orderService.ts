@@ -3,6 +3,8 @@ import { Cart } from "../../../models/cart";
 import { Order } from "../../../models/order";
 import Stripe from "stripe";
 import { User } from "../../../models/user";
+import { makeStripePayment } from "../../stripe";
+import { Payment } from "../../../models/payment";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
 
@@ -100,7 +102,7 @@ export async function createOrder(userId: string) {
     );
   }
 
-  if (!lastOrder.stripeSource) {
+  if (!lastOrder.paymentSource) {
     throw new OrderError(
       "NO_PAYMENT_SOURCE",
       "Your previous order does not have a payment method available. Please place an order manually first."
@@ -117,31 +119,36 @@ export async function createOrder(userId: string) {
     );
   }
 
-  let charge: any;
+  let metaData: any;
 
   try {
-    const customer = await stripe.customers.create({
-      email: lastOrder.billingAddress?.email || user.email,
-      source: lastOrder.stripeSource,
-    });
 
-    charge = await stripe.charges.create({
-      amount: Math.round(checkout.totalAmount * 100),
-      currency: "usd",
-      description: `Charge for order by ${lastOrder.billingAddress?.email || user.email}`,
-      customer: customer.id,
-    });
+    const { status, message, charge } = await makeStripePayment({
+      token: lastOrder.paymentSource,
+      amount: checkout.totalAmount,
+      description: `Order placed By Assistant for (${user.fullName})`,
+      user
+    })
 
-    if (charge.status !== "succeeded") {
+    if (!status) {
       throw new OrderError(
         "PAYMENT_FAILED",
-        "Payment failed. Your order was not placed."
+        message || "Payment failed. Your order was not placed1111."
       );
     }
 
-  } catch (error) {
+    metaData = charge
+
+  } catch (error: any) {
+    if (error?.code === "token_already_used" || error?.raw?.code === "token_already_used") {
+      console.error("Stripe payment source already used:", error.message);
+      throw new OrderError("PAYMENT_FAILED", "Your saved payment method can no longer be reused. Please place an order manually with a new payment method first."
+      )
+    }
+
     if (error instanceof OrderError) { throw error }
     console.error("AI order payment error:", error);
+
     throw new OrderError(
       "PAYMENT_FAILED",
       "Payment failed. Your order was not placed."
@@ -152,7 +159,7 @@ export async function createOrder(userId: string) {
     user: user._id,
     billingAddress: lastOrder.billingAddress,
     shippingAddress: lastOrder.shippingAddress,
-    stripeSource: lastOrder.stripeSource,
+    paymentSource: lastOrder.paymentSource,
     orderNote: "Order Placed By Assistant",
     products: checkout.items.map((item: any) => ({
       collectionId: item.collection,
@@ -165,6 +172,12 @@ export async function createOrder(userId: string) {
     status: "pending",
   });
 
+  await Payment.create({
+    orderId: order._id,
+    amount: checkout.totalAmount,
+    paymentMethod: "Stripe",
+    metaData,
+  });
 
   await Cart.findOneAndUpdate(
     { user: user._id },
