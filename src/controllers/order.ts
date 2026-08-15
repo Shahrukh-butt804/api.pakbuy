@@ -4,16 +4,14 @@ dotenv.config({ path: `.env.${env}` });
 
 import { Response } from "express";
 import Stripe from "stripe";
-import { Order } from "../models/order";
-import { Payment } from "../models/payment";
-import { orderConfirmation } from "../utils/nodeMailer";
-import { tryCatch } from "../utils/tryCatch";
+import { Cart } from "../models/cart";
 import { Collection } from "../models/collection";
 import { Coupon } from "../models/coupon";
+import { Order } from "../models/order";
+import { Payment } from "../models/payment";
 import { Product } from "../models/product";
-import { EmailTemplate } from "../models/emailTemplate";
-import { Cart } from "../models/cart";
-import { makeStripePayment } from "../utils/stripe";
+import { makeStripePayment, stripeRecurringPaymentMethod } from "../utils/stripe";
+import { tryCatch } from "../utils/tryCatch";
 
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
@@ -127,12 +125,32 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
   const taxAmount = (taxCalculation.tax_breakdown[0]?.amount || 0) / 100;
   const finalTotal = (taxCalculation.amount_total || amountAfterDiscount * 100) / 100;
 
+
+  const { status: paymentMethodStatus, cardId, customerId, message: paymentMethodMessage } = await stripeRecurringPaymentMethod({ token, user: req.user })
+
+  if (!paymentMethodStatus) {
+    return res.status(400).json({ message: paymentMethodMessage });
+  }
+
+  const { status, message, charge } = await makeStripePayment({
+    sourceId: cardId,
+    amount: finalTotal,
+    customerId,
+    description: `Order placed User (${req.user.fullName})`,
+    user: req.user
+  })
+
+  if (!status) {
+    return res.status(400).json({ message });
+  }
+
   // ✅ CREATE ORDER IN DB
   const order = await Order.create({
     user: req.user?._id || null,
     billingAddress,
     shippingAddress: shippingAddress || billingAddress,
-    paymentSource: token,
+    cardId,
+    customerId,
     orderNote: orderNote || "",
     products,
     subTotal: baseAmount,
@@ -143,16 +161,6 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
 
   if (!order) return res.status(500).json({ message: "Failed to create order" });
 
-  const { status, message, charge } = await makeStripePayment({
-    token,
-    amount: finalTotal,
-    description: `Order placed User (${req.user.fullName})`,
-    user: req.user
-  })
-
-  if (!status) {
-    return res.status(400).json({ message });
-  }
 
   // ✅ Save Payment
   await Payment.create({
@@ -162,36 +170,12 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     metaData: charge
   });
 
-  // ✅ Confirm order
-  const updatedOrder = await Order.findByIdAndUpdate(
-    order._id,
-    { $set: { status: "confirmed" } },
-    { new: true }
-  );
-
-  const templateBody = await EmailTemplate.findOne({ name: "Order Confirmation" });
-
-  // ✅ Send Email
-  await orderConfirmation(
-    order.billingAddress.email,
-    "Order Confirmation - Pak Buy",
-    templateBody?.body || "Email template",
-    {
-      customerName: `${order.billingAddress.firstName} ${order.billingAddress.lastName}`,
-      orderId: order._id.toString(),
-      totalAmount: finalTotal,
-      orderDate: new Date().toLocaleDateString(),
-      packageData: allCodes,
-      trackingLink: `/track-order/${order._id}`,
-    }
-  );
-
   await Cart.findOneAndUpdate({ user: req.user._id }, { items: [], totalAmount: 0 })
 
   return res.status(200).json({
     message: "Order created successfully!",
     success: true,
-    order: updatedOrder,
+    order,
   });
 
 });
@@ -332,8 +316,7 @@ const updateOrderStatus = tryCatch(async (req: any, res: Response): Promise<any>
 
 
 export {
-  getStripeKeys,
   createOrder, deleteOrder, getAllOrder,
-  getOrderById, getOrderByUser, updateOrderStatus
+  getOrderById, getOrderByUser, getStripeKeys, updateOrderStatus
 };
 

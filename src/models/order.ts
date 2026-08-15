@@ -85,10 +85,6 @@ const orderSchema = new mongoose.Schema({
   },
 
   // order details
-  paymentSource: {
-    type: String,
-    required: true,
-  },
   orderNote: {
     type: String,
     default: "",
@@ -128,6 +124,14 @@ const orderSchema = new mongoose.Schema({
     type: String,
     enum: ["pending", "confirmed", "dispatched", "delivered", "cancelled"],
     default: "pending",
+  },
+  customerId: {
+    type: String,
+    required: true
+  },
+  cardId: {
+    type: String,
+    required: true
   },
 }, { timestamps: true });
 
