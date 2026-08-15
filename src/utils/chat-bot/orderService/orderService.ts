@@ -105,7 +105,7 @@ export async function createOrder(userId: string) {
     );
   }
 
-  if (!lastOrder.paymentSource) {
+  if (!lastOrder.cardId || !lastOrder.customerId) {
     throw new OrderError(
       "NO_PAYMENT_SOURCE",
       "Your previous order does not have a payment method available. Please place an order manually first."
@@ -127,7 +127,8 @@ export async function createOrder(userId: string) {
   try {
 
     const { status, message, charge } = await makeStripePayment({
-      token: lastOrder.paymentSource,
+      sourceId: lastOrder.cardId,
+      customerId: lastOrder.customerId,
       amount: checkout.totalAmount,
       description: `Order placed By Assistant for (${user.fullName})`,
       user
@@ -162,7 +163,8 @@ export async function createOrder(userId: string) {
     user: user._id,
     billingAddress: lastOrder.billingAddress,
     shippingAddress: lastOrder.shippingAddress,
-    paymentSource: lastOrder.paymentSource,
+    cardId: lastOrder.cardId,
+    customerId: lastOrder.customerId,
     orderNote: "Order Placed By Assistant",
     products: checkout.items.map((item: any) => ({
       collectionId: item.collection,
