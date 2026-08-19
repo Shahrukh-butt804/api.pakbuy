@@ -18,6 +18,12 @@ const validateUser = [
     .withMessage("Please enter a valid email address")
     .normalizeEmail(),
 
+  body("phone")
+    .notEmpty()
+    .withMessage("Phone Number is required")
+    .isNumeric()
+    .withMessage("Phone Number must contain only numbers"),
+
   body("password")
     .notEmpty()
     .withMessage("Password is required")

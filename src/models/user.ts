@@ -23,6 +23,16 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    phone: {
+      type: String,
+      required: [true, "Phone Number is required"],
+      validate: {
+        validator: function (value: string) {
+          return /^\d+$/.test(value);
+        },
+        message: "Phone Number must contain only numbers",
+      },
+    },
     image: {
       type: String,
       default: null,
