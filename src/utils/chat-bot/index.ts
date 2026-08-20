@@ -34,10 +34,10 @@ export async function callOpenRouter(messages: ChatMessage[]): Promise<string> {
       "X-Title": process.env.SITE_NAME || "Store Assistant",
     },
     body: JSON.stringify({
-      model: process.env.OPENROUTER_MODEL || "openrouter/free",
+      model: process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini",
       messages,
-      temperature: 0.4,
-      max_tokens: 500,
+      temperature: 0.3,
+      max_tokens: 400,
     }),
   });
 

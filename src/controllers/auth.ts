@@ -16,20 +16,14 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
 
 const signup = tryCatch(async (req: any, res: Response): Promise<any> => {
-  const {
-    fullName,
-    email,
-    password,
-    role,
-    token,
-  } = req.body;
+  const { fullName, email, password, role, token, phone } = req.body;
 
   const image = req.files?.image?.[0]?.path || null;
 
   // check if email already exists
-  const existingUser = await User.findOne({ email });
+  const existingUser = await User.findOne({ $or: [{ phone }, { email }], });
   if (existingUser) {
-    return res.status(400).json({ message: "Email already exists" });
+    return res.status(400).json({ message: "Email or Phone Number already exists" });
   }
 
 
@@ -57,7 +51,7 @@ const signup = tryCatch(async (req: any, res: Response): Promise<any> => {
     }
 
     payment = await MemberShipPayment.create({
-      amount: Number(process.env.MEMBERSHIPCHARGES) * 100,
+      amount: Number(process.env.MEMBERSHIPCHARGES),
       paymentMethod: "Stripe",
       metaData: charge
     });
@@ -73,6 +67,7 @@ const signup = tryCatch(async (req: any, res: Response): Promise<any> => {
     email,
     password,
     image: image ? image : null,
+    phone,
     role
   });
 
