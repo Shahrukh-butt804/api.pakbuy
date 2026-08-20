@@ -51,7 +51,7 @@ const signup = tryCatch(async (req: any, res: Response): Promise<any> => {
     }
 
     payment = await MemberShipPayment.create({
-      amount: Number(process.env.MEMBERSHIPCHARGES) * 100,
+      amount: Number(process.env.MEMBERSHIPCHARGES),
       paymentMethod: "Stripe",
       metaData: charge
     });
