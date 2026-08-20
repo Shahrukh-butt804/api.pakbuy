@@ -26,16 +26,25 @@ const getStripeKeys = tryCatch(async (req: any, res: Response): Promise<any> => 
 const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
   const { billingAddress, shippingAddress, token, orderNote, products, couponId } = req.body;
 
+  if (!Array.isArray(products) || products.length === 0) {
+    return res.status(400).json({ message: "No products found in order" });
+  }
+
   let baseAmount = 0;
   let allCodes: any[] = [];
-
-  // ✅ Calculate items & deduct stock
   const lineItems: any[] = [];
 
   for (const item of products) {
-    const collection = await Collection.findById(item.collectionId);
+    const collectionId = item?.collectionId;
+    const quantity = Number(item?.quantity || 0);
+
+    if (!collectionId || !Number.isInteger(quantity) || quantity < 1) {
+      return res.status(400).json({ message: "Invalid product item in order" });
+    }
+
+    const collection: any = await Collection.findById(collectionId);
     if (!collection) {
-      return res.status(404).json({ message: `Collection not found for ID: ${item.collectionId}` });
+      return res.status(404).json({ message: `Collection not found for ID: ${collectionId}` });
     }
 
     const allProducts: any = await Product.find({
@@ -47,15 +56,14 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     }
 
     for (const product of allProducts) {
-      if (product.stock < item.quantity) {
-        return res.status(400).json({ message: `Insufficient stock for ${product.name} in ${collection.name}` });
+      if (product.stock < quantity) {
+        return res.status(400).json({ message: `Insufficient stock for ${product.name} in ${collection.title || collection.name}` });
       }
 
-      product.stock -= Number(item.quantity);
-      baseAmount += product.price * item.quantity;
+      product.stock -= quantity;
 
       if (product.codes?.length > 0) {
-        const takenCodes = product.codes.splice(0, item.quantity);
+        const takenCodes = product.codes.splice(0, quantity);
         allCodes.push({
           name: product.name,
           codes: takenCodes,
@@ -63,20 +71,21 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
         });
       }
 
-      // ✅ Prepare Stripe line item for tax calculation
-      lineItems.push({
-        reference: product._id.toString(),
-        amount: Math.round(product.price * 100), // single item price in cents
-        quantity: item.quantity,
-        tax_behavior: "exclusive",
-        tax_code: "txcd_99999999" // replace with proper code per product if needed
-      });
-
       await product.save({ validateBeforeSave: false });
     }
+
+    const collectionPrice = Number(collection.CollectionPrice || 0);
+    baseAmount += collectionPrice * quantity;
+
+    lineItems.push({
+      reference: collection._id.toString(),
+      amount: Math.round(collectionPrice * 100),
+      quantity,
+      tax_behavior: "exclusive",
+      tax_code: "txcd_99999999"
+    });
   }
 
-  // ✅ APPLY COUPON BEFORE TAX
   let discountAmount = 0;
   if (couponId) {
     const coupon = await Coupon.findById(couponId);
@@ -90,23 +99,22 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
       return res.status(400).json({ message: "Coupon limit per user exceeded" });
     }
 
-    discountAmount =
-      coupon.type === "amount"
-        ? coupon.value
-        : (baseAmount * coupon.value) / 100;
+    discountAmount = coupon.type === "amount"
+      ? coupon.value
+      : (baseAmount * coupon.value) / 100;
 
     coupon.limit -= 1;
     coupon.usedBy.push(req.user._id);
     await coupon.save();
   }
 
-  let amountAfterDiscount = Math.max(0, baseAmount - discountAmount);
+  const amountAfterDiscount = Math.max(0, baseAmount - discountAmount);
+  const discountRatio = baseAmount > 0 ? amountAfterDiscount / baseAmount : 0;
 
-  // ✅ Adjust line items for discount proportionally
-  const discountRatio = amountAfterDiscount / baseAmount || 0;
-  lineItems.forEach(item => { item.amount = Math.round(item.amount * discountRatio) });
+  lineItems.forEach((item) => {
+    item.amount = Math.round((Number(item.amount || 0) * discountRatio) || 0);
+  });
 
-  // ✅ STRIPE TAX CALCULATION
   const taxCalculation: any = await stripe.tax.calculations.create({
     currency: "usd",
     customer_details: {
@@ -122,11 +130,10 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     line_items: lineItems
   });
 
-  const taxAmount = (taxCalculation.tax_breakdown[0]?.amount || 0) / 100;
-  const finalTotal = (taxCalculation.amount_total || amountAfterDiscount * 100) / 100;
+  const taxAmount = Number(((taxCalculation.tax_breakdown?.[0]?.amount || 0) / 100).toFixed(2));
+  const finalTotal = Number((taxCalculation.amount_total || Math.round(amountAfterDiscount * 100)) / 100);
 
-
-  const { status: paymentMethodStatus, cardId, customerId, message: paymentMethodMessage } = await stripeRecurringPaymentMethod({ token, user: req.user })
+  const { status: paymentMethodStatus, cardId, customerId, message: paymentMethodMessage } = await stripeRecurringPaymentMethod({ token, user: req.user });
 
   if (!paymentMethodStatus) {
     return res.status(400).json({ message: paymentMethodMessage });
@@ -138,13 +145,12 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     customerId,
     description: `Order placed User (${req.user.fullName})`,
     user: req.user
-  })
+  });
 
   if (!status) {
     return res.status(400).json({ message });
   }
 
-  // ✅ CREATE ORDER IN DB
   const order = await Order.create({
     user: req.user?._id || null,
     billingAddress,
@@ -153,31 +159,28 @@ const createOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
     customerId,
     orderNote: orderNote || "",
     products,
-    subTotal: baseAmount,
-    discountAmount,
-    taxAmount,
-    totalAmount: finalTotal,
+    subTotal: Number(baseAmount.toFixed(2)),
+    discountAmount: Number(discountAmount.toFixed(2)),
+    taxAmount: Number(taxAmount.toFixed(2)),
+    totalAmount: Number(finalTotal.toFixed(2)),
   });
 
   if (!order) return res.status(500).json({ message: "Failed to create order" });
 
-
-  // ✅ Save Payment
   await Payment.create({
     orderId: order._id,
-    amount: finalTotal,
+    amount: Number(finalTotal.toFixed(2)),
     paymentMethod: "Stripe",
     metaData: charge
   });
 
-  await Cart.findOneAndUpdate({ user: req.user._id }, { items: [], totalAmount: 0 })
+  await Cart.findOneAndUpdate({ user: req.user._id }, { items: [], totalAmount: 0 });
 
   return res.status(200).json({
     message: "Order created successfully!",
     success: true,
     order,
   });
-
 });
 
 const getAllOrder = tryCatch(async (req: any, res: Response): Promise<any> => {
